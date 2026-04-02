@@ -1,4 +1,0 @@
-# Resources that i used for Explanation
-	- Photos : [https://www.pinterest.com/]
-	- Jupyter-notebook Cheat Sheet : [https://www.kaggle.com/code/cuecacuela/2025-the-ultimate-markdown-cheat-sheet]
-	- Markdown Cheat Sheet : [https://www.markdownguide.org/basic-syntax/#headings]
