@@ -1,0 +1,87 @@
+@startuml UC-17_Update_Shipment_Lead_Time
+title UC-17 — Update Shipment & Lead Time
+
+box "Actors"
+actor ":Supplier" as Supplier
+end box
+
+box "System"
+participant ":SupplierPortal" as SP
+participant ":ShipmentController" as SC
+participant ":LeadTimeEstimator" as LTE
+participant ":ReceivingStateMachine" as RSM
+participant ":NotificationService" as NS
+participant ":BackorderController" as BC
+database ":Database" as DB
+end box
+
+Supplier -> SP : openShipmentUpdate(poId)
+activate SP
+
+SP -> SC : fetchConfirmedPO(poId)
+activate SC
+SC -> DB : getPO(poId)
+activate DB
+DB --> SC : poData
+deactivate DB
+SC --> SP : displayShipmentForm(poData)
+SP --> Supplier : showShipmentDispatchForm(poData)
+
+Supplier -> SP : submitDispatchDetails(poId, dispatchDate, items)
+SP -> SC : updateShipmentDispatch(poId, dispatchDate, items)
+
+SC -> LTE : estimateArrival(supplierId, dispatchDate)
+activate LTE
+LTE -> DB : fetchSupplierDeliveryHistory(supplierId)
+activate DB
+DB --> LTE : deliveryHistory[]
+deactivate DB
+LTE -> LTE : computeEstimatedArrival(deliveryHistory, dispatchDate)
+activate LTE
+LTE --> LTE : estimatedArrivalDate
+deactivate LTE
+LTE --> SC : estimatedArrivalDate
+deactivate LTE
+
+SC -> RSM : initReceivingStateMachine(shipmentId)
+activate RSM
+RSM -> DB : setShipmentState(shipmentId, "Expected")
+activate DB
+DB --> RSM : set
+deactivate DB
+RSM --> SC : stateMachineInitialized(state="Expected")
+deactivate RSM
+
+' Asynchronous non-blocking notification
+SC ->> NS : notifyManagerAsync(estimatedArrivalDate, shipmentId)
+
+SC -> DB : persistShipmentDetails(poId, dispatchDate, estimatedArrivalDate)
+activate DB
+DB --> SC : saved
+deactivate DB
+
+SC --> SP : shipmentUpdated(estimatedArrivalDate)
+SP --> Supplier : confirmEstimatedArrival(estimatedArrivalDate)
+
+== opt: Extension Point — Carrier ==
+
+opt no carrier assigned to shipment
+    SC -> DB : checkCarrierAssignment(shipmentId)
+    activate DB
+    DB --> SC : carrierAssigned=false
+    deactivate DB
+    SC --> SP : triggerCarrierSelection(shipmentId)
+    note right of SC : Triggers UC-19\n(Select Shipping Carrier)
+end
+
+== include: UC-18 Manage Backorders ==
+
+SC -> BC : triggerBackorderCheck(shipmentId)
+activate BC
+note right of BC : Executes UC-18 workflow
+deactivate BC
+
+deactivate SC
+deactivate SP
+
+@enduml

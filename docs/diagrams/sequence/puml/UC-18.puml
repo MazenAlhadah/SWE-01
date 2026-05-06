@@ -1,0 +1,74 @@
+@startuml UC-18_Manage_Backorders
+title UC-18 — Manage Backorders\n(included by UC-17)
+
+note over BC : Triggered when backordered items arrive in shipment
+
+box "Actors"
+actor ":Supplier" as Supplier
+end box
+
+box "System"
+participant ":SupplierPortal" as SP
+participant ":BackorderController" as BC
+participant ":NotificationService" as NS
+database ":Database" as DB
+end box
+
+BC -> DB : detectBackorderedItemsInShipment(shipmentId)
+activate BC
+activate DB
+DB --> BC : backorderedItems[]
+deactivate DB
+
+alt backordered items found
+    BC -> DB : fetchOpenBackorders(backorderedItems)
+    activate DB
+    DB --> BC : backorders{customerId, itemId, orderDate}[]
+    deactivate DB
+
+    BC -> BC : sortByWaitingTime(backorders)
+    activate BC
+    BC --> BC : prioritizedList[]
+    deactivate BC
+    note right of BC
+      Oldest open backorder date
+      gets priority first (FR17)
+    end note
+
+    loop for each backorder in prioritizedList
+        BC -> DB : allocateStockToCustomer(customerId, itemId, quantity)
+        activate DB
+        DB --> BC : allocated
+        deactivate DB
+
+        BC -> DB : updateBackorderRecord(backorderId, "Fulfilled")
+        activate DB
+        DB --> BC : updated
+        deactivate DB
+
+        ' Asynchronous non-blocking notifications
+        BC ->> NS : dispatchCustomerNotification(customerId, itemId)
+        note right of NS : Fire-and-forget via message queue
+
+        BC ->> NS : dispatchFloorStaffNotification(itemId, packingStation)
+    end
+
+    BC -> DB : updateInventory(backorderedItems)
+    activate DB
+    DB --> BC : inventoryUpdated
+    deactivate DB
+
+    BC --> SP : backordersProcessed(summary)
+    activate SP
+    SP --> Supplier : confirmBackordersFulfilledInPriorityOrder(summary)
+    deactivate SP
+
+else no backorders
+    BC --> SP : noBackordersFound()
+    activate SP
+    deactivate SP
+end
+
+deactivate BC
+
+@enduml

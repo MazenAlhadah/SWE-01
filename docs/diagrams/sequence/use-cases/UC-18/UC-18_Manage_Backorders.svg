@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentScriptType="application/ecmascript" contentStyleType="text/css" height="1073px" preserveAspectRatio="none" style="width:1190px;height:1073px;" version="1.1" viewBox="0 0 1190 1073" width="1190px" zoomAndPan="magnify"><defs><filter height="300%" id="fl29coyrcxk1i" width="300%" x="-1" y="-1"><feGaussianBlur result="blurOut" stdDeviation="2.0"/><feColorMatrix in="blurOut" result="blurOut2" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .4 0"/><feOffset dx="4.0" dy="4.0" in="blurOut2" result="blurOut3"/><feBlend in="SourceGraphic" in2="blurOut3" mode="normal"/></filter></defs><g><text fill="#000000" font-family="sans-serif" font-size="18" lengthAdjust="spacing" textLength="241" x="472.5" y="30.6855">UC-18 — Manage Backorders</text><text fill="#000000" font-family="sans-serif" font-size="18" lengthAdjust="spacing" textLength="160" x="513" y="53.3262">(included by UC-17)</text><rect fill="#DDDDDD" height="1002.4922" style="stroke:#A80036;stroke-width:1.0;" width="70" x="16" y="65.2813"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="39" x="31.5" y="78.7764">Actors</text><rect fill="#DDDDDD" height="1002.4922" style="stroke:#A80036;stroke-width:1.0;" width="764.5" x="317.5" y="65.2813"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="46" x="676.75" y="78.7764">System</text><rect fill="#FFFFFF" filter="url(#fl29coyrcxk1i)" height="30.3516" style="stroke:#A80036;stroke-width:1.0;" width="10" x="372" y="848.625"/><rect fill="#FFFFFF" filter="url(#fl29coyrcxk1i)" height="30" style="stroke:#A80036;stroke-width:1.0;" width="10" x="372" y="925.1641"/><rect fill="#FFFFFF" filter="url(#fl29coyrcxk1i)" height="727.2188" style="stroke:#A80036;stroke-width:1.0;" width="10" x="589" y="242.9453"/><rect fill="#FFFFFF" filter="url(#fl29coyrcxk1i)" height="41.3516" style="stroke:#A80036;stroke-width:1.0;" width="10" x="594" y="397.7031"/><rect fill="#FFFFFF" filter="url(#fl29coyrcxk1i)" height="30.3516" style="stroke:#A80036;stroke-width:1.0;" width="10" x="1037.5" y="242.9453"/><rect fill="#FFFFFF" filter="url(#fl29coyrcxk1i)" height="30.3516" style="stroke:#A80036;stroke-width:1.0;" width="10" x="1037.5" y="329"/><rect fill="#FFFFFF" filter="url(#fl29coyrcxk1i)" height="30.3516" style="stroke:#A80036;stroke-width:1.0;" width="10" x="1037.5" y="558.4609"/><rect fill="#FFFFFF" filter="url(#fl29coyrcxk1i)" height="30.3516" style="stroke:#A80036;stroke-width:1.0;" width="10" x="1037.5" y="619.1641"/><rect fill="#FFFFFF" filter="url(#fl29coyrcxk1i)" height="30.3516" style="stroke:#A80036;stroke-width:1.0;" width="10" x="1037.5" y="787.9219"/><rect fill="#FFFFFF" filter="url(#fl29coyrcxk1i)" height="674.8672" style="stroke:#000000;stroke-width:2.0;" width="1166" x="10" y="288.2969"/><rect fill="#FFFFFF" filter="url(#fl29coyrcxk1i)" height="240.8125" style="stroke:#000000;stroke-width:2.0;" width="600.5" x="565.5" y="517.7578"/><rect fill="#FFFFFF" height="76.1875" style="stroke:none;stroke-width:1.0;" width="1166" x="10" y="886.9766"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:5.0,5.0;" x1="51" x2="51" y1="170.2422" y2="980.1641"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:5.0,5.0;" x1="376.5" x2="376.5" y1="170.2422" y2="980.1641"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:5.0,5.0;" x1="593.5" x2="593.5" y1="170.2422" y2="980.1641"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:5.0,5.0;" x1="928" x2="928" y1="170.2422" y2="980.1641"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:5.0,5.0;" x1="1042" x2="1042" y1="170.2422" y2="980.1641"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="56" x="20" y="167.166">:Supplier</text><ellipse cx="51" cy="95.6328" fill="#FEFECE" filter="url(#fl29coyrcxk1i)" rx="8" ry="8" style="stroke:#A80036;stroke-width:2.0;"/><path d="M51,103.6328 L51,130.6328 M38,111.6328 L64,111.6328 M51,130.6328 L38,145.6328 M51,130.6328 L64,145.6328 " fill="none" filter="url(#fl29coyrcxk1i)" style="stroke:#A80036;stroke-width:2.0;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="56" x="20" y="993.6973">:Supplier</text><ellipse cx="51" cy="1006.7734" fill="#FEFECE" filter="url(#fl29coyrcxk1i)" rx="8" ry="8" style="stroke:#A80036;stroke-width:2.0;"/><path d="M51,1014.7734 L51,1041.7734 M38,1022.7734 L64,1022.7734 M51,1041.7734 L38,1056.7734 M51,1041.7734 L64,1056.7734 " fill="none" filter="url(#fl29coyrcxk1i)" style="stroke:#A80036;stroke-width:2.0;"/><rect fill="#FEFECE" filter="url(#fl29coyrcxk1i)" height="31.6094" style="stroke:#A80036;stroke-width:1.5;" width="107" x="321.5" y="133.6328"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="93" x="328.5" y="155.166">:SupplierPortal</text><rect fill="#FEFECE" filter="url(#fl29coyrcxk1i)" height="31.6094" style="stroke:#A80036;stroke-width:1.5;" width="107" x="321.5" y="979.1641"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="93" x="328.5" y="1000.6973">:SupplierPortal</text><rect fill="#FEFECE" filter="url(#fl29coyrcxk1i)" height="31.6094" style="stroke:#A80036;stroke-width:1.5;" width="33" x="575.5" y="133.6328"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="19" x="582.5" y="155.166">BC</text><rect fill="#FEFECE" filter="url(#fl29coyrcxk1i)" height="31.6094" style="stroke:#A80036;stroke-width:1.5;" width="33" x="575.5" y="979.1641"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="19" x="582.5" y="1000.6973">BC</text><rect fill="#FEFECE" filter="url(#fl29coyrcxk1i)" height="31.6094" style="stroke:#A80036;stroke-width:1.5;" width="134" x="859" y="133.6328"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="120" x="866" y="155.166">:NotificationService</text><rect fill="#FEFECE" filter="url(#fl29coyrcxk1i)" height="31.6094" style="stroke:#A80036;stroke-width:1.5;" width="134" x="859" y="979.1641"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="120" x="866" y="1000.6973">:NotificationService</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="65" x="1007" y="167.166">:Database</text><path d="M1024.5,116.6328 C1024.5,106.6328 1042.5,106.6328 1042.5,106.6328 C1042.5,106.6328 1060.5,106.6328 1060.5,116.6328 L1060.5,142.6328 C1060.5,152.6328 1042.5,152.6328 1042.5,152.6328 C1042.5,152.6328 1024.5,152.6328 1024.5,142.6328 L1024.5,116.6328 " fill="#FEFECE" filter="url(#fl29coyrcxk1i)" style="stroke:#000000;stroke-width:1.5;"/><path d="M1024.5,116.6328 C1024.5,126.6328 1042.5,126.6328 1042.5,126.6328 C1042.5,126.6328 1060.5,126.6328 1060.5,116.6328 " fill="none" style="stroke:#000000;stroke-width:1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="65" x="1007" y="993.6973">:Database</text><path d="M1024.5,1006.7734 C1024.5,996.7734 1042.5,996.7734 1042.5,996.7734 C1042.5,996.7734 1060.5,996.7734 1060.5,1006.7734 L1060.5,1032.7734 C1060.5,1042.7734 1042.5,1042.7734 1042.5,1042.7734 C1042.5,1042.7734 1024.5,1042.7734 1024.5,1032.7734 L1024.5,1006.7734 " fill="#FEFECE" filter="url(#fl29coyrcxk1i)" style="stroke:#000000;stroke-width:1.5;"/><path d="M1024.5,1006.7734 C1024.5,1016.7734 1042.5,1016.7734 1042.5,1016.7734 C1042.5,1016.7734 1060.5,1016.7734 1060.5,1006.7734 " fill="none" style="stroke:#000000;stroke-width:1.5;"/><rect fill="#FFFFFF" filter="url(#fl29coyrcxk1i)" height="30.3516" style="stroke:#A80036;stroke-width:1.0;" width="10" x="372" y="848.625"/><rect fill="#FFFFFF" filter="url(#fl29coyrcxk1i)" height="30" style="stroke:#A80036;stroke-width:1.0;" width="10" x="372" y="925.1641"/><rect fill="#FFFFFF" filter="url(#fl29coyrcxk1i)" height="727.2188" style="stroke:#A80036;stroke-width:1.0;" width="10" x="589" y="242.9453"/><rect fill="#FFFFFF" filter="url(#fl29coyrcxk1i)" height="41.3516" style="stroke:#A80036;stroke-width:1.0;" width="10" x="594" y="397.7031"/><rect fill="#FFFFFF" filter="url(#fl29coyrcxk1i)" height="30.3516" style="stroke:#A80036;stroke-width:1.0;" width="10" x="1037.5" y="242.9453"/><rect fill="#FFFFFF" filter="url(#fl29coyrcxk1i)" height="30.3516" style="stroke:#A80036;stroke-width:1.0;" width="10" x="1037.5" y="329"/><rect fill="#FFFFFF" filter="url(#fl29coyrcxk1i)" height="30.3516" style="stroke:#A80036;stroke-width:1.0;" width="10" x="1037.5" y="558.4609"/><rect fill="#FFFFFF" filter="url(#fl29coyrcxk1i)" height="30.3516" style="stroke:#A80036;stroke-width:1.0;" width="10" x="1037.5" y="619.1641"/><rect fill="#FFFFFF" filter="url(#fl29coyrcxk1i)" height="30.3516" style="stroke:#A80036;stroke-width:1.0;" width="10" x="1037.5" y="787.9219"/><path d="M430,185.2422 L430,211.2422 L754,211.2422 L754,195.2422 L744,185.2422 L430,185.2422 " fill="#FBFB77" filter="url(#fl29coyrcxk1i)" style="stroke:#A80036;stroke-width:1.0;"/><path d="M744,185.2422 L744,195.2422 L754,195.2422 L744,185.2422 " fill="#FBFB77" style="stroke:#A80036;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="303" x="436" y="203.7373">Triggered when backordered items arrive in shipment</text><polygon fill="#A80036" points="1025.5,238.9453,1035.5,242.9453,1025.5,246.9453,1029.5,242.9453" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;" x1="599" x2="1031.5" y1="242.9453" y2="242.9453"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="277" x="606" y="238.0889">detectBackorderedItemsInShipment(shipmentId)</text><polygon fill="#A80036" points="610,269.2969,600,273.2969,610,277.2969,606,273.2969" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="604" x2="1041.5" y1="273.2969" y2="273.2969"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="111" x="616" y="268.4404">backorderedItems[]</text><path d="M10,288.2969 L71,288.2969 L71,296.2969 L61,306.2969 L10,306.2969 L10,288.2969 " fill="#EEEEEE" style="stroke:#000000;stroke-width:1.0;"/><rect fill="none" height="674.8672" style="stroke:#000000;stroke-width:2.0;" width="1166" x="10" y="288.2969"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="16" x="25" y="302.792">alt</text><text fill="#000000" font-family="sans-serif" font-size="11" font-weight="bold" lengthAdjust="spacing" textLength="149" x="86" y="301.7158">[backordered items found]</text><polygon fill="#A80036" points="1025.5,325,1035.5,329,1025.5,333,1029.5,329" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;" x1="599" x2="1031.5" y1="329" y2="329"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="236" x="606" y="324.1436">fetchOpenBackorders(backorderedItems)</text><polygon fill="#A80036" points="610,355.3516,600,359.3516,610,363.3516,606,359.3516" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="604" x2="1041.5" y1="359.3516" y2="359.3516"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="251" x="616" y="354.4951">backorders{customerId, itemId, orderDate}[]</text><line style="stroke:#A80036;stroke-width:1.0;" x1="599" x2="646" y1="384.7031" y2="384.7031"/><line style="stroke:#A80036;stroke-width:1.0;" x1="646" x2="646" y1="384.7031" y2="397.7031"/><line style="stroke:#A80036;stroke-width:1.0;" x1="605" x2="646" y1="397.7031" y2="397.7031"/><polygon fill="#A80036" points="615,393.7031,605,397.7031,615,401.7031,611,397.7031" style="stroke:#A80036;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="182" x="611" y="379.8467">sortByWaitingTime(backorders)</text><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="604" x2="646" y1="438.0547" y2="438.0547"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="646" x2="646" y1="438.0547" y2="451.0547"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="599" x2="646" y1="451.0547" y2="451.0547"/><polygon fill="#A80036" points="609,447.0547,599,451.0547,609,455.0547,605,451.0547" style="stroke:#A80036;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="85" x="611" y="433.1982">prioritizedList[]</text><path d="M604,459.0547 L604,501.0547 L785,501.0547 L785,469.0547 L775,459.0547 L604,459.0547 " fill="#FBFB77" filter="url(#fl29coyrcxk1i)" style="stroke:#A80036;stroke-width:1.0;"/><path d="M775,459.0547 L775,469.0547 L785,469.0547 L775,459.0547 " fill="#FBFB77" style="stroke:#A80036;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="160" x="610" y="477.5498">Oldest open backorder date</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="136" x="610" y="493.9014">gets priority first (FR17)</text><path d="M565.5,517.7578 L638.5,517.7578 L638.5,525.7578 L628.5,535.7578 L565.5,535.7578 L565.5,517.7578 " fill="#EEEEEE" style="stroke:#000000;stroke-width:1.0;"/><rect fill="none" height="240.8125" style="stroke:#000000;stroke-width:2.0;" width="600.5" x="565.5" y="517.7578"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="28" x="580.5" y="532.2529">loop</text><text fill="#000000" font-family="sans-serif" font-size="11" font-weight="bold" lengthAdjust="spacing" textLength="207" x="653.5" y="531.1768">[for each backorder in prioritizedList]</text><polygon fill="#A80036" points="1025.5,554.4609,1035.5,558.4609,1025.5,562.4609,1029.5,558.4609" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;" x1="599" x2="1031.5" y1="558.4609" y2="558.4609"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="318" x="606" y="553.6045">allocateStockToCustomer(customerId, itemId, quantity)</text><polygon fill="#A80036" points="610,584.8125,600,588.8125,610,592.8125,606,588.8125" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="604" x2="1041.5" y1="588.8125" y2="588.8125"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="52" x="616" y="583.9561">allocated</text><polygon fill="#A80036" points="1025.5,615.1641,1035.5,619.1641,1025.5,623.1641,1029.5,619.1641" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;" x1="599" x2="1031.5" y1="619.1641" y2="619.1641"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="276" x="606" y="614.3076">updateBackorderRecord(backorderId, "Fulfilled")</text><polygon fill="#A80036" points="610,645.5156,600,649.5156,610,653.5156,606,649.5156" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="604" x2="1041.5" y1="649.5156" y2="649.5156"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="46" x="616" y="644.6592">updated</text><line style="stroke:#A80036;stroke-width:1.0;" x1="926" x2="916" y1="679.8672" y2="675.8672"/><line style="stroke:#A80036;stroke-width:1.0;" x1="926" x2="916" y1="679.8672" y2="683.8672"/><line style="stroke:#A80036;stroke-width:1.0;" x1="599" x2="927" y1="679.8672" y2="679.8672"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="284" x="606" y="675.0107">dispatchCustomerNotification(customerId, itemId)</text><path d="M933,692.8672 L933,718.8672 L1152,718.8672 L1152,702.8672 L1142,692.8672 L933,692.8672 " fill="#FBFB77" filter="url(#fl29coyrcxk1i)" style="stroke:#A80036;stroke-width:1.0;"/><path d="M1142,692.8672 L1142,702.8672 L1152,702.8672 L1142,692.8672 " fill="#FBFB77" style="stroke:#A80036;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="198" x="939" y="711.3623">Fire-and-forget via message queue</text><line style="stroke:#A80036;stroke-width:1.0;" x1="926" x2="916" y1="750.5703" y2="746.5703"/><line style="stroke:#A80036;stroke-width:1.0;" x1="926" x2="916" y1="750.5703" y2="754.5703"/><line style="stroke:#A80036;stroke-width:1.0;" x1="599" x2="927" y1="750.5703" y2="750.5703"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="305" x="606" y="745.7139">dispatchFloorStaffNotification(itemId, packingStation)</text><polygon fill="#A80036" points="1025.5,783.9219,1035.5,787.9219,1025.5,791.9219,1029.5,787.9219" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;" x1="599" x2="1031.5" y1="787.9219" y2="787.9219"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="201" x="606" y="783.0654">updateInventory(backorderedItems)</text><polygon fill="#A80036" points="610,814.2734,600,818.2734,610,822.2734,606,818.2734" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="604" x2="1041.5" y1="818.2734" y2="818.2734"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="99" x="616" y="813.417">inventoryUpdated</text><polygon fill="#A80036" points="393,844.625,383,848.625,393,852.625,389,848.625" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="387" x2="588" y1="848.625" y2="848.625"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="188" x="399" y="843.7686">backordersProcessed(summary)</text><polygon fill="#A80036" points="62,874.9766,52,878.9766,62,882.9766,58,878.9766" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="56" x2="376" y1="878.9766" y2="878.9766"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="297" x="68" y="874.1201">confirmBackordersFulfilledInPriorityOrder(summary)</text><line style="stroke:#000000;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="10" x2="1176" y1="887.9766" y2="887.9766"/><text fill="#000000" font-family="sans-serif" font-size="11" font-weight="bold" lengthAdjust="spacing" textLength="89" x="15" y="899.3955">[no backorders]</text><polygon fill="#A80036" points="393,921.1641,383,925.1641,393,929.1641,389,925.1641" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="387" x2="588" y1="925.1641" y2="925.1641"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="124" x="399" y="920.3076">noBackordersFound()</text><!--MD5=[fe453203d2bc4519ccea0e70faf5cc2c]
+@startuml UC-18_Manage_Backorders
+title UC-18 — Manage Backorders\n(included by UC-17)
+
+note over BC : Triggered when backordered items arrive in shipment
+
+box "Actors"
+actor ":Supplier" as Supplier
+end box
+
+box "System"
+participant ":SupplierPortal" as SP
+participant ":BackorderController" as BC
+participant ":NotificationService" as NS
+database ":Database" as DB
+end box
+
+BC -> DB : detectBackorderedItemsInShipment(shipmentId)
+activate BC
+activate DB
+DB - -> BC : backorderedItems[]
+deactivate DB
+
+alt backordered items found
+    BC -> DB : fetchOpenBackorders(backorderedItems)
+    activate DB
+    DB - -> BC : backorders{customerId, itemId, orderDate}[]
+    deactivate DB
+
+    BC -> BC : sortByWaitingTime(backorders)
+    activate BC
+    BC - -> BC : prioritizedList[]
+    deactivate BC
+    note right of BC
+      Oldest open backorder date
+      gets priority first (FR17)
+    end note
+
+    loop for each backorder in prioritizedList
+        BC -> DB : allocateStockToCustomer(customerId, itemId, quantity)
+        activate DB
+        DB - -> BC : allocated
+        deactivate DB
+
+        BC -> DB : updateBackorderRecord(backorderId, "Fulfilled")
+        activate DB
+        DB - -> BC : updated
+        deactivate DB
+
+        ' Asynchronous non-blocking notifications
+        BC ->> NS : dispatchCustomerNotification(customerId, itemId)
+        note right of NS : Fire-and-forget via message queue
+
+        BC ->> NS : dispatchFloorStaffNotification(itemId, packingStation)
+    end
+
+    BC -> DB : updateInventory(backorderedItems)
+    activate DB
+    DB - -> BC : inventoryUpdated
+    deactivate DB
+
+    BC - -> SP : backordersProcessed(summary)
+    activate SP
+    SP - -> Supplier : confirmBackordersFulfilledInPriorityOrder(summary)
+    deactivate SP
+
+else no backorders
+    BC - -> SP : noBackordersFound()
+    activate SP
+    deactivate SP
+end
+
+deactivate BC
+
+@enduml
+
+@startuml UC-18_Manage_Backorders
+title UC-18 — Manage Backorders\n(included by UC-17)
+
+note over BC : Triggered when backordered items arrive in shipment
+
+box "Actors"
+actor ":Supplier" as Supplier
+end box
+
+box "System"
+participant ":SupplierPortal" as SP
+participant ":BackorderController" as BC
+participant ":NotificationService" as NS
+database ":Database" as DB
+end box
+
+BC -> DB : detectBackorderedItemsInShipment(shipmentId)
+activate BC
+activate DB
+DB - -> BC : backorderedItems[]
+deactivate DB
+
+alt backordered items found
+    BC -> DB : fetchOpenBackorders(backorderedItems)
+    activate DB
+    DB - -> BC : backorders{customerId, itemId, orderDate}[]
+    deactivate DB
+
+    BC -> BC : sortByWaitingTime(backorders)
+    activate BC
+    BC - -> BC : prioritizedList[]
+    deactivate BC
+    note right of BC
+      Oldest open backorder date
+      gets priority first (FR17)
+    end note
+
+    loop for each backorder in prioritizedList
+        BC -> DB : allocateStockToCustomer(customerId, itemId, quantity)
+        activate DB
+        DB - -> BC : allocated
+        deactivate DB
+
+        BC -> DB : updateBackorderRecord(backorderId, "Fulfilled")
+        activate DB
+        DB - -> BC : updated
+        deactivate DB
+
+        BC ->> NS : dispatchCustomerNotification(customerId, itemId)
+        note right of NS : Fire-and-forget via message queue
+
+        BC ->> NS : dispatchFloorStaffNotification(itemId, packingStation)
+    end
+
+    BC -> DB : updateInventory(backorderedItems)
+    activate DB
+    DB - -> BC : inventoryUpdated
+    deactivate DB
+
+    BC - -> SP : backordersProcessed(summary)
+    activate SP
+    SP - -> Supplier : confirmBackordersFulfilledInPriorityOrder(summary)
+    deactivate SP
+
+else no backorders
+    BC - -> SP : noBackordersFound()
+    activate SP
+    deactivate SP
+end
+
+deactivate BC
+
+@enduml
+
+PlantUML version 1.2021.00(Sun Jan 10 12:25:05 EET 2021)
+(MIT source distribution)
+Java Runtime: Java(TM) SE Runtime Environment
+JVM: Java HotSpot(TM) 64-Bit Server VM
+Default Encoding: UTF-8
+Language: en
+Country: US
+--></g></svg>

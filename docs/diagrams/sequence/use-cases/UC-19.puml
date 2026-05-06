@@ -1,0 +1,75 @@
+@startuml UC-19_Select_Shipping_Carrier
+title UC-19 — Select Shipping Carrier\n(extends UC-17 at Carrier)
+
+note over SP : Triggered from UC-17\nextension point: Carrier\nCondition: [no carrier assigned to shipment]
+
+box "Actors"
+actor ":Supplier" as Supplier
+end box
+
+box "System"
+participant ":SupplierPortal" as SP
+participant ":CarrierSelectionService" as CSS
+participant ":LabelService" as LS
+database ":Database" as DB
+end box
+
+SP -> CSS : initiateCarrierSelection(shipmentId, orderId)
+activate SP
+activate CSS
+
+CSS -> DB : fetchOrderDetails(orderId)
+activate DB
+DB --> CSS : orderDetails{deliveryAddress, urgency}
+deactivate DB
+
+CSS -> DB : fetchAvailableCarriers()
+activate DB
+DB --> CSS : carriers{name, speed, cost, coverage}[]
+deactivate DB
+
+CSS -> CSS : applyCarrierSelectionLogic(carriers, deliveryAddress, urgency)
+activate CSS
+CSS --> CSS : filteredCarriers[]
+deactivate CSS
+note right of CSS
+  Configurable rule:
+  fastest delivery vs. lowest cost
+  based on address & urgency (FR21)
+end note
+
+CSS -> CSS : rankCarriers(carriers)
+activate CSS
+CSS --> CSS : rankedCarriers[]
+deactivate CSS
+CSS --> SP : recommendedCarrier{carrierId, name, estimatedDelivery, cost}
+deactivate CSS
+
+SP --> Supplier : displayRecommendedCarrier(recommendedCarrier)
+
+Supplier -> SP : confirmCarrier(carrierId)
+SP -> CSS : assignCarrier(shipmentId, carrierId)
+activate CSS
+
+CSS -> DB : updateShipmentCarrier(shipmentId, carrierId)
+activate DB
+DB --> CSS : updated
+deactivate DB
+
+CSS -> DB : linkCarrierToOrder(orderId, carrierId)
+activate DB
+DB --> CSS : linked
+deactivate DB
+
+CSS -> LS : initiateLabelGeneration(orderId, carrierId)
+activate LS
+LS --> CSS : labelGenerationStarted()
+deactivate LS
+
+CSS --> SP : carrierAssigned{carrierId, estimatedDelivery}
+deactivate CSS
+
+SP --> Supplier : confirmCarrierAssigned_LabelGenerationInitiated()
+deactivate SP
+
+@enduml

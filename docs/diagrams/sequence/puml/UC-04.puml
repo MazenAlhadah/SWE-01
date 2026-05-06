@@ -1,0 +1,66 @@
+@startuml UC-04_View_Supplier_Performance_Analytics
+title UC-04 — View Supplier Performance & Analytics\n(extends UC-05 at Evaluation)
+
+note over UI : Triggered from UC-05\nextension point: Evaluation\nCondition: [manager selects 'evaluate before order']
+
+box "Actors"
+actor ":WarehouseManager" as Manager
+end box
+
+box "System"
+participant ":ProcurementUI" as UI
+participant ":SupplierAnalyticsController" as SAC
+participant ":ContractService" as CS
+database ":Database" as DB
+end box
+
+Manager -> UI : selectEvaluateBeforeOrder()
+activate UI
+
+UI -> SAC : requestSupplierAnalytics()
+activate SAC
+
+SAC -> DB : fetchAllSuppliers()
+activate DB
+DB --> SAC : suppliers[]
+deactivate DB
+
+loop for each supplier in suppliers
+    SAC -> DB : fetchDeliveryHistory(supplierId)
+    activate DB
+    DB --> SAC : deliveryHistory[]
+    deactivate DB
+    SAC -> SAC : calculateAccuracyScore(deliveryHistory)
+    activate SAC
+    SAC --> SAC : accuracyScore
+    deactivate SAC
+end
+
+SAC -> CS : fetchSupplierContracts()
+activate CS
+CS -> DB : getContractVersions()
+activate DB
+DB --> CS : contracts{pricingTiers, volumeDiscounts, history}
+deactivate DB
+CS --> SAC : contractData[]
+deactivate CS
+
+SAC --> UI : supplierReport{accuracyScores, deliveryPerf, contracts}
+deactivate SAC
+
+UI --> Manager : displaySupplierPerformanceReport(supplierReport)
+
+Manager -> UI : selectPreferredSupplier(supplierId)
+UI -> SAC : recordManagerDecision(supplierId, managerId)
+activate SAC
+SAC -> DB : persistDecision(supplierId, managerId, timestamp)
+activate DB
+DB --> SAC : saved
+deactivate DB
+SAC --> UI : decisionRecorded()
+deactivate SAC
+UI --> Manager : confirmDecisionRecorded()
+
+deactivate UI
+
+@enduml
