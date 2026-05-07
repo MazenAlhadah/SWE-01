@@ -1,0 +1,75 @@
+@startuml UC-14_Track_Order_Fulfillment_Status
+title UC-14 — Track Order Fulfillment Status
+
+box "Actors"
+    actor ":FloorStaff" as Staff
+end box
+
+box "System"
+    participant ":FloorStaffUI" as UI
+    participant ":OrderController" as OC
+    participant ":FulfillmentStateMachine" as SM
+    participant ":NotificationService" as NS
+    database ":Database" as DB
+end box
+
+' ── Main Flow ──────────────────────────────
+
+Staff -> UI : openOrderTracker()
+activate UI
+
+UI -> OC : fetchActiveOrders(staffId)
+activate OC
+OC -> DB : getOrdersForStaff(staffId)
+activate DB
+DB --> OC : orders[]
+deactivate DB
+OC --> UI : displayOrderList(orders)
+UI --> Staff : showActiveOrders(orders)
+
+Staff -> UI : selectOrder(orderId)
+UI -> OC : getOrderDetails(orderId)
+OC -> SM : getCurrentState(orderId)
+activate SM
+SM -> DB : fetchOrderState(orderId)
+activate DB
+DB --> SM : currentState
+deactivate DB
+SM --> OC : stateMachineData{currentState, nextAllowedState}
+deactivate SM
+OC --> UI : displayStateMachine(currentState, nextAllowedState)
+UI --> Staff : showStateMachine(Processing→Picking→Packing→Shipped→Delivered)
+
+Staff -> UI : confirmTransitionToNextState(orderId)
+UI -> OC : requestStateTransition(orderId, nextState)
+OC -> SM : validateTransition(currentState, nextState)
+activate SM
+SM -> SM : validateTransition(currentState, nextState)
+activate SM
+SM --> SM : validationResult
+deactivate SM
+
+alt valid transition
+    SM -> DB : updateOrderState(orderId, nextState)
+    activate DB
+    DB --> SM : updated
+    deactivate DB
+    SM --> OC : transitionSuccess(newState)
+    deactivate SM
+    OC -> NS : notifyNextActor(orderId, newState)
+    activate NS
+    NS --> OC : notified()
+    deactivate NS
+    OC --> UI : stateUpdated(newState)
+    UI --> Staff : showNewState(newState)
+
+else invalid transition — skipped or reversed
+    SM --> OC : transitionRejected(reason)
+    OC --> UI : transitionError(reason)
+    UI --> Staff : alertInvalidStateTransition(reason)
+end
+
+deactivate OC
+deactivate UI
+
+@enduml

@@ -1,0 +1,105 @@
+@startuml UC-02_Manage_Zonal_Storage
+title UC-02 — Manage Zonal Storage
+
+box "Actors"
+    actor ":WarehouseManager" as Manager
+end box
+
+box "System"
+    participant ":StorageUI" as UI
+    participant ":StorageController" as SC
+    participant ":ZonalOptimizer" as ZO
+    participant ":BackorderService" as BS
+    database ":Database" as DB
+end box
+
+' ── Main Flow ──────────────────────────────
+
+Manager -> UI : openZonalStorageScreen()
+activate UI
+
+UI -> SC : requestZonalData()
+activate SC
+
+SC -> DB : fetchItemCatalog()
+activate DB
+DB --> SC : items[]
+deactivate DB
+
+SC -> DB : fetchZoneData()
+activate DB
+DB --> SC : zones[]
+deactivate DB
+
+SC -> ZO : runSmartZonalOptimizer(items, zones)
+activate ZO
+
+ZO -> ZO : computeVelocityScore(items)
+activate ZO
+ZO --> ZO : velocityScores[]
+deactivate ZO
+ZO -> ZO : calculate3DVolumetricUsage(zones)
+activate ZO
+ZO --> ZO : volumetricData[]
+deactivate ZO
+
+ZO --> SC : suggestedLocations[]
+deactivate ZO
+
+SC --> UI : displaySuggestions(suggestedLocations)
+deactivate SC
+
+UI --> Manager : showSuggestedLocations(suggestedLocations)
+
+' ── Alt: Manager Approves or Overrides ──────
+
+alt manager approves
+    Manager -> UI : approveSuggestions()
+    UI -> SC : commitZoneAssignments(suggestedLocations)
+    activate SC
+    SC -> DB : updateZoneAssignments(suggestedLocations)
+    activate DB
+    DB --> SC : success
+    deactivate DB
+    SC --> UI : assignmentsUpdated()
+    deactivate SC
+
+else manager overrides
+    Manager -> UI : overrideLocation(itemId, newZoneId)
+    UI -> SC : commitZoneAssignments(overriddenLocations)
+    activate SC
+    SC -> DB : updateZoneAssignments(overriddenLocations)
+    activate DB
+    DB --> SC : success
+    deactivate DB
+    SC --> UI : assignmentsUpdated()
+    deactivate SC
+end
+
+UI --> Manager : confirmZoneUpdate()
+
+' ── Extension Point: BackOrder ──────────────
+
+opt incomingItem has existingBackorder
+    UI -> SC : checkBackorders(incomingItems)
+    activate SC
+    SC -> BS : fetchAndMatchBackorders(incomingItems)
+    activate BS
+    BS -> DB : fetchOpenBackorders()
+    activate DB
+    DB --> BS : backorders[]
+    deactivate DB
+    BS -> BS : matchIncomingToBackorders(incomingItems, backorders)
+    activate BS
+    BS --> BS : matchedItems[]
+    deactivate BS
+    BS --> SC : matchedItems[]
+    deactivate BS
+    SC --> UI : notifyCrossDocking(matchedItems)
+    deactivate SC
+    UI --> Manager : showCrossDockingAlert(matchedItems)
+end
+
+deactivate UI
+
+@enduml

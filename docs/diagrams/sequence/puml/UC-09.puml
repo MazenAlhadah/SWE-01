@@ -1,0 +1,86 @@
+@startuml UC-09_Archive_Retain_Data
+title UC-09 — Archive & Retain Data
+
+box "Actors"
+    actor ":WarehouseManager" as Manager
+end box
+
+box "System"
+    participant ":AdminUI" as UI
+    participant ":ArchiveService" as ARS
+    participant ":NotificationService" as NS
+    database ":ActiveDB" as ADB
+    database ":ArchiveDB" as ARDB
+end box
+
+note over ARS
+    Runs as a scheduled background job
+end note
+
+' ── Main Flow: Auto Archive ─────────────────
+
+activate ARS
+ARS -> ADB : fetchCompletedOrders(olderThan=12months)
+activate ADB
+ADB --> ARS : eligibleOrders[]
+deactivate ADB
+
+alt eligibleOrders not empty
+    loop for each order in eligibleOrders
+        ARS -> ARDB : writeToArchive(orderRecord)
+        activate ARDB
+        ARDB --> ARS : archiveSuccess()
+        deactivate ARDB
+
+        ARS -> ADB : removeFromActiveDB(orderId)
+        activate ADB
+        ADB --> ARS : removed()
+        deactivate ADB
+    end
+
+    ARS -> ADB : verifyActiveQueryPerformance()
+    activate ADB
+    ADB --> ARS : performanceOK()
+    deactivate ADB
+
+    ARS -> NS : notifyManager(archivedCount)
+    activate NS
+    NS --> UI : pushArchiveCompleteAlert(archivedCount)
+    activate UI
+    deactivate NS
+    UI --> Manager : showArchiveCompleteNotification(archivedCount)
+    deactivate UI
+
+else no eligible orders
+    ARS -> ARS : scheduleNextCheck()
+    activate ARS
+    ARS --> ARS : scheduled
+    deactivate ARS
+end
+
+deactivate ARS
+
+' ── Manager Retrieves Archived Data ─────────
+
+== Manager Retrieves Archived Data ==
+
+Manager -> UI : requestArchivedOrder(orderId)
+activate UI
+UI -> ARS : fetchFromArchive(orderId)
+activate ARS
+ARS -> ARDB : queryArchive(orderId)
+activate ARDB
+ARDB --> ARS : archivedRecord
+deactivate ARDB
+
+note right of ARDB
+    Read-only — never
+    permanently deleted (NFR16)
+end note
+
+ARS --> UI : archivedOrderData
+deactivate ARS
+UI --> Manager : displayArchivedRecord(archivedOrderData)
+deactivate UI
+
+@enduml

@@ -1,0 +1,75 @@
+@startuml UC-12_Validate_Parcel_Weight_Dimensions
+title UC-12 — Validate Parcel Weight & Dimensions\n(included by UC-11)
+
+box "Actors"
+    actor ":Packer" as Packer
+end box
+
+box "System"
+    participant ":PackingUI" as UI
+    participant ":WeightValidationService" as WVS
+    database ":Database" as DB
+end box
+
+note over Packer, DB
+    Precondition: Packer has finished packing the order
+end note
+
+' ── Main Flow ──────────────────────────────
+
+Packer -> UI : placePackedBoxOnScale()
+activate UI
+
+UI -> WVS : initiateWeightCheck(orderId)
+activate WVS
+
+WVS -> DB : fetchExpectedItemWeights(orderId)
+activate DB
+DB --> WVS : itemWeights[]
+deactivate DB
+
+WVS -> WVS : sumExpectedWeight(itemWeights)
+activate WVS
+WVS --> WVS : expectedWeight
+deactivate WVS
+
+WVS --> UI : requestScaleReading()
+UI --> Packer : promptConfirmBoxOnScale()
+
+Packer -> UI : confirmOnScale()
+UI -> WVS : submitActualWeight(actualWeight)
+
+WVS -> WVS : compareWeights(actualWeight, expectedWeight, tolerance)
+activate WVS
+WVS --> WVS : comparisonResult
+deactivate WVS
+
+alt |actual - expected| <= tolerance
+    WVS -> DB : logWeightValidation(orderId, actualWeight, "PASSED")
+    activate DB
+    DB --> WVS : logged
+    deactivate DB
+    WVS --> UI : validationResult("APPROVED")
+    UI --> Packer : parcelApproved_ProceedToLabel()
+
+else |actual - expected| > tolerance
+    WVS -> DB : logWeightValidation(orderId, actualWeight, "FAILED", deviation)
+    activate DB
+    DB --> WVS : logged
+    deactivate DB
+    WVS --> UI : validationResult("ERROR", deviation)
+    UI --> Packer : alertPackingErrorDetected(deviation)
+    Packer -> UI : recheckAndResubmit(orderId, newActualWeight)
+    UI -> WVS : revalidate(orderId, newActualWeight)
+    WVS -> WVS : compareWeights(newActualWeight, expectedWeight, tolerance)
+    activate WVS
+    WVS --> WVS : comparisonResult
+    deactivate WVS
+    WVS --> UI : revalidationResult
+    note right of WVS : Repeat comparison
+end
+
+deactivate WVS
+deactivate UI
+
+@enduml

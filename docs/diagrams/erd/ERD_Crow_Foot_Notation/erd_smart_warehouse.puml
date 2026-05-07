@@ -1,0 +1,372 @@
+@startuml ERD_SmartWarehouse_CrowFoot_A_Fixed
+
+' ============================================================
+' VERSION A — Fixed Schema + Crow's Foot + Clean Layout
+' Changes:
+'   - PURCHASE_ORDER →  SHIPMENT: ||--o| → ||--o{
+'   - Cardinality corrections (optional where logical)
+'   - together{} blocks to reduce arrow crossings
+' ============================================================
+
+skinparam linetype ortho
+skinparam nodesep 80
+skinparam ranksep 100
+skinparam defaultFontSize 11
+skinparam defaultFontName Arial
+
+skinparam entity {
+  BackgroundColor #F0F4FF
+  BorderColor #3A5DAE
+  FontColor #1a1a2e
+  FontStyle bold
+}
+
+skinparam ArrowColor #3A5DAE
+
+' -----------------------------------------------------------
+' ZONE 1: USER & ROLES
+' -----------------------------------------------------------
+together {
+  entity USER {
+    PK | user_id
+    ---
+       | name
+       | password_hash
+       | email
+       | role
+       | is_active
+       | created_at
+  }
+
+  entity CUSTOMER {
+    PK | customer_id
+    ---
+    FK | user_id
+       | full_name
+       | default_address
+  }
+
+  entity SUPPLIER {
+    PK | supplier_id
+    ---
+    FK | user_id
+       | company_name
+       | contact_info
+       | accuracy_score
+       | tier_rank
+  }
+}
+
+' -----------------------------------------------------------
+' ZONE 2: WAREHOUSE PHYSICAL STRUCTURE
+' -----------------------------------------------------------
+together {
+  entity WAREHOUSE_ZONE {
+    PK | zone_id
+    ---
+       | zone_name
+       | zone_type
+       | total_capacity_m3
+       | current_occupancy_m3
+       | temperature
+       | humidity
+  }
+
+  entity AISLE {
+    PK | aisle_id
+    ---
+    FK | zone_id
+       | aisle_label
+       | discrepancy_rate
+       | last_cycle_count
+  }
+
+  entity BIN {
+    PK | bin_id
+    ---
+    FK | zone_id
+    FK | aisle_id
+       | location_code
+       | max_capacity_m3
+       | current_usage_m3
+  }
+}
+
+' -----------------------------------------------------------
+' ZONE 3: ITEM & INVENTORY
+' -----------------------------------------------------------
+together {
+  entity ITEM {
+    PK | item_id
+    ---
+       | sku
+       | name
+       | weight
+       | expiry_date
+       | unit_price
+       | sales_velocity
+       | is_sensitive
+       | safety_stock_qty
+       | height_cm
+       | width_cm
+       | depth_cm
+  }
+
+  entity INVENTORY {
+    PK | inventory_id
+    ---
+    FK | item_id
+    FK | bin_id
+       | quantity_available
+       | quantity_reserved
+       | safety_stock
+       | state
+       | last_sensor_weight_kg
+       | sensor_timestamp
+  }
+
+  entity IOT_SENSOR {
+    PK | sensor_id
+    ---
+    FK | bin_id
+    FK | item_id
+       | type
+       | last_reading
+       | expected_weight_kg
+       | deviation_kg
+       | has_discrepancy
+       | timestamp
+       | tamper_hash
+  }
+}
+
+' -----------------------------------------------------------
+' ZONE 4: PROCUREMENT
+' -----------------------------------------------------------
+together {
+  entity SUPPLIER_CONTRACT {
+    PK | contract_id
+    ---
+    FK | supplier_id
+    FK | item_id
+       | version
+       | unit_price
+       | discount_threshold
+       | discount_percentage
+       | valid_from
+       | valid_to
+  }
+
+  entity PURCHASE_ORDER {
+    PK | po_id
+    ---
+    FK | supplier_id
+    FK | manager_id
+       | status
+       | total_cost
+       | digital_signature
+       | estimated_arrival
+       | generated_at
+       | confirmed_at
+  }
+
+  entity PO_LINE_ITEM {
+    PK | po_line_id
+    ---
+    FK | po_id
+    FK | item_id
+       | quantity_ordered
+       | quantity_received
+       | unit_price
+  }
+}
+
+together {
+  entity SHIPMENT {
+    PK | shipment_id
+    ---
+    FK | po_id
+    FK | carrier_id
+       | tracking_number
+       | dispatch_date
+       | estimated_arrival
+       | actual_arrival
+       | state
+  }
+
+  entity SHIPPING_CARRIER {
+    PK | carrier_id
+    ---
+       | carrier_name
+       | delivery_speed_days
+       | base_cost
+       | coverage_regions
+  }
+}
+
+' -----------------------------------------------------------
+' ZONE 5: CUSTOMER ORDERS
+' -----------------------------------------------------------
+together {
+  entity CUSTOMER_ORDER {
+    PK | order_id
+    ---
+    FK | customer_id
+    FK | picker_id
+    FK | packer_id
+    FK | carrier_id
+       | status
+       | total_amount
+       | shipping_address
+       | urgency
+       | date
+       | created_at
+       | shipped_at
+       | delivered_at
+  }
+
+  entity ORDER_LINE_ITEM {
+    PK | order_line_id
+    ---
+    FK | order_id
+    FK | item_id
+       | quantity
+       | state
+       | unit_price
+  }
+}
+
+together {
+  entity SHIPPING_LABEL {
+    PK | label_id
+    ---
+    FK | order_id
+    FK | carrier_id
+       | qr_code
+       | generated_at
+       | scanned_at
+  }
+
+  entity BACKORDER {
+    PK | backorder_id
+    ---
+    FK | order_line_id
+    FK | item_id
+       | quantity_needed
+       | reason
+       | status
+       | created_at
+       | fulfilled_at
+  }
+}
+
+' -----------------------------------------------------------
+' ZONE 6: PICKING
+' -----------------------------------------------------------
+together {
+  entity PICK_LIST {
+    PK | picklist_id
+    ---
+    FK | picker_id
+       | optimized_route
+       | batch_size
+       | status
+       | created_at
+       | completed_at
+  }
+
+  entity PICK_LIST_ITEM {
+    PK | pl_item_id
+    ---
+    FK | picklist_id
+    FK | order_line_id
+    FK | bin_id
+       | is_picked
+       | picked_at
+  }
+}
+
+' -----------------------------------------------------------
+' ZONE 7: AUDIT & SYSTEM EVENTS
+' -----------------------------------------------------------
+together {
+  entity AUDIT_LOG {
+    PK | log_id
+    ---
+    FK | user_id
+       | event_type
+       | event_detail
+       | reason
+       | discrepancy_rate
+       | timestamp
+  }
+
+  entity EMERGENCY_EVENT {
+    PK | event_id
+    ---
+       | reason
+       | timestamp
+       | resolved
+  }
+
+  entity ARCHIVED_ORDER {
+    PK | archive_id
+    ---
+    FK | order_id
+       | archive_data
+       | archived_at
+  }
+}
+
+' -----------------------------------------------------------
+' RELATIONSHIPS
+' -----------------------------------------------------------
+
+' ZONE 1: USER is-a
+USER ||--o| CUSTOMER                        : "is a"
+USER ||--o| SUPPLIER                        : "is a"
+
+' ZONE 2: WAREHOUSE STRUCTURE
+WAREHOUSE_ZONE ||--|{ AISLE                 : "contains"
+WAREHOUSE_ZONE ||--|{ BIN                   : "has"
+AISLE          ||--|{ BIN                   : "groups"
+
+' ZONE 3: INVENTORY
+ITEM           ||--|{ INVENTORY             : "tracked in"
+BIN            ||--o{ INVENTORY             : "stores"
+BIN            ||--|{ IOT_SENSOR            : "monitored by"
+ITEM           |o--o{ IOT_SENSOR            : "measured by"
+
+' ZONE 4: PROCUREMENT
+SUPPLIER       ||--o{ SUPPLIER_CONTRACT     : "signs"
+ITEM           ||--o{ SUPPLIER_CONTRACT     : "covered by"
+SUPPLIER       ||--o{ PURCHASE_ORDER        : "receives"
+USER           |o--o{ PURCHASE_ORDER        : "approves"
+PURCHASE_ORDER ||--|{ PO_LINE_ITEM          : "contains"
+ITEM           ||--o{ PO_LINE_ITEM          : "listed in"
+PURCHASE_ORDER ||--o{ SHIPMENT              : "results in"
+SHIPPING_CARRIER ||--o{ SHIPMENT            : "handles"
+
+' ZONE 5: CUSTOMER ORDERS
+CUSTOMER         ||--o{ CUSTOMER_ORDER      : "places"
+USER             |o--o{ CUSTOMER_ORDER      : "picks for / packs for"
+SHIPPING_CARRIER ||--o{ CUSTOMER_ORDER      : "delivers"
+CUSTOMER_ORDER   ||--|{ ORDER_LINE_ITEM     : "contains"
+ITEM             ||--o{ ORDER_LINE_ITEM     : "included as"
+CUSTOMER_ORDER   ||--o| SHIPPING_LABEL      : "has"
+SHIPPING_CARRIER ||--o{ SHIPPING_LABEL      : "used in"
+ORDER_LINE_ITEM  ||--o| BACKORDER           : "generates"
+ITEM             ||--o{ BACKORDER           : "backordered for"
+
+' ZONE 6: PICKING
+USER             |o--o{ PICK_LIST           : "assigned to"
+PICK_LIST        ||--|{ PICK_LIST_ITEM      : "includes"
+ORDER_LINE_ITEM  ||--o| PICK_LIST_ITEM      : "linked to"
+BIN              ||--o{ PICK_LIST_ITEM      : "picked from"
+
+' ZONE 7: AUDIT & EVENTS
+USER             ||--o{ AUDIT_LOG           : "triggers"
+' NOTE: EMERGENCY_EVENT is intentionally standalone (system-generated, no FK)
+CUSTOMER_ORDER   |o--o| ARCHIVED_ORDER      : "archived as"
+
+@enduml

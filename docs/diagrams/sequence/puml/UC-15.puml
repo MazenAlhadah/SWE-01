@@ -1,0 +1,94 @@
+@startuml UC-15_Handle_Cross_Docking
+title UC-15 — Handle Cross-Docking\n(extends UC-02 at BackOrder)
+
+box "Actors"
+    actor ":Picker" as Picker
+end box
+
+box "System"
+    participant ":WarehouseUI" as UI
+    participant ":CrossDockingController" as CDC
+    participant ":BackorderService" as BS
+    participant ":NotificationService" as NS
+    database ":Database" as DB
+end box
+
+note over Picker, DB
+    Triggered from UC-02
+    Extension Point: BackOrder
+    Condition: [incomingItem has existingBackorder]
+end note
+
+' ── Main Flow ──────────────────────────────
+
+activate CDC
+CDC -> DB : fetchIncomingShipmentItems()
+activate DB
+DB --> CDC : incomingItems[]
+deactivate DB
+
+CDC -> BS : checkAgainstBackorders(incomingItems)
+activate BS
+BS -> DB : fetchOpenBackorders()
+activate DB
+DB --> BS : backorders[]
+deactivate DB
+BS -> BS : matchIncomingToBackorders(incomingItems, backorders)
+activate BS
+BS --> BS : matchedItems[]
+deactivate BS
+BS --> CDC : matchedItems[]
+deactivate BS
+
+alt backordered items found
+    loop for each matchedItem
+        CDC -> DB : markItemForCrossDocking(itemId)
+        activate DB
+        DB --> CDC : marked
+        deactivate DB
+
+        CDC -> DB : bypassStorageIntake(itemId)
+        activate DB
+        DB --> CDC : updated
+        deactivate DB
+
+        CDC -> NS : notifyPicker(pickerId, itemId, "RouteToPackingNotStorage")
+        activate NS
+        NS --> UI : displayCrossDockingAlert(matchedItems)
+        activate UI
+        deactivate NS
+        UI --> Picker : alertDeliverItemsToPackingStation(matchedItems)
+        deactivate UI
+    end
+
+    Picker -> UI : confirmCrossDockDelivery(itemId)
+    activate UI
+    UI -> CDC : confirmDeliveredToPacking(itemId)
+    CDC -> BS : updateBackorderRecord(itemId, "CrossDocked")
+    activate BS
+    BS -> DB : setBackorderStatus(itemId, "Fulfilled")
+    activate DB
+    DB --> BS : updated
+    deactivate DB
+    BS --> CDC : backorderUpdated()
+    deactivate BS
+
+    CDC -> DB : updateInventory(itemId, "CrossDocked")
+    activate DB
+    DB --> CDC : inventoryUpdated
+    deactivate DB
+
+    CDC --> UI : crossDockingComplete()
+    UI --> Picker : confirmCrossDockingDone()
+    deactivate UI
+
+else no backorders found
+    CDC --> UI : noBackorderMatch()
+    activate UI
+    note right of UI : Items proceed to standard storage intake
+    deactivate UI
+end
+
+deactivate CDC
+
+@enduml

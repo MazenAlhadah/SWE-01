@@ -1,0 +1,148 @@
+@startuml UC-11_Pack_Sort_Orders
+title UC-11 — Pack & Sort Orders
+
+box "Actors"
+    actor ":Packer" as Packer
+end box
+
+box "System"
+    participant ":PackingUI" as UI
+    participant ":PackingController" as PC
+    participant ":SortToLightService" as STL
+    participant ":BoxRecommender" as BR
+    participant ":WeightValidator" as WV
+    participant ":LabelGenerator" as LG
+    database ":Database" as DB
+end box
+
+' ── Main Flow ──────────────────────────────
+
+Packer -> UI : openPackingStation()
+activate UI
+
+UI -> PC : requestPackingQueue(packerId)
+activate PC
+PC -> DB : fetchPickedOrders()
+activate DB
+DB --> PC : pickedOrders[]
+deactivate DB
+PC --> UI : displayPackingQueue(pickedOrders)
+UI --> Packer : showOrdersReadyToPack(pickedOrders)
+
+Packer -> UI : selectOrder(orderId)
+UI -> STL : initSortToLight(orderId)
+activate STL
+STL -> DB : fetchOrderItems(orderId)
+activate DB
+DB --> STL : items[]
+deactivate DB
+STL -> STL : assignItemsToBins(items)
+activate STL
+STL --> STL : binAssignments[]
+deactivate STL
+STL --> UI : lightGuidance{item, targetBin}
+UI --> Packer : activateSortToLightGuidance()
+
+loop for each item — max 2 interactions per item
+    Packer -> UI : placeItemInBin(itemId, binId)
+    UI -> STL : confirmPlacement(itemId, binId)
+    STL -> STL : validateBinAssignment(itemId, binId)
+    activate STL
+    STL --> STL : validationResult
+    deactivate STL
+    STL --> UI : placementConfirmed()
+    UI --> Packer : greenLight_NextItem()
+end
+deactivate STL
+
+UI -> BR : recommendBoxSize(orderId)
+activate BR
+BR -> DB : fetchItemDimensions(orderId)
+activate DB
+DB --> BR : dimensions[]
+deactivate DB
+BR -> BR : computeSmallestViableBox(dimensions)
+activate BR
+BR --> BR : boxSize
+deactivate BR
+BR --> UI : recommendedBoxSize
+deactivate BR
+UI --> Packer : displayRecommendedBoxSize(recommendedBoxSize)
+
+Packer -> UI : confirmPacked(orderId)
+
+' ── Includes UC-12: Validate Parcel Weight ──
+
+ref over Packer, DB
+    UC-12: Validate Parcel Weight & Dimensions
+end ref
+
+UI -> WV : validateWeight(orderId, actualWeight)
+activate WV
+WV -> DB : fetchExpectedWeight(orderId)
+activate DB
+DB --> WV : expectedWeight
+deactivate DB
+WV -> WV : compareWeights(actualWeight, expectedWeight, tolerance)
+activate WV
+WV --> WV : comparisonResult
+deactivate WV
+
+alt |actual - expected| <= tolerance
+    WV -> DB : logWeightValidation(orderId, actualWeight, "PASSED")
+    activate DB
+    DB --> WV : logged
+    deactivate DB
+    WV --> UI : parcelApproved()
+else |actual - expected| > tolerance
+    WV -> DB : logWeightValidation(orderId, actualWeight, "FAILED")
+    activate DB
+    DB --> WV : logged
+    deactivate DB
+    WV --> UI : packingErrorAlert(deviation)
+    UI --> Packer : alertRecheckContents(deviation)
+    Packer -> UI : resubmitAfterRecheck(orderId, newActualWeight)
+    UI -> WV : revalidate(orderId, newActualWeight)
+    WV --> UI : revalidationResult
+end
+deactivate WV
+
+' ── Includes UC-13: Generate & Scan Shipping Label ──
+
+ref over Packer, DB
+    UC-13: Generate & Scan Shipping Label
+end ref
+
+UI -> LG : generateShippingLabel(orderId)
+activate LG
+LG -> DB : fetchOrderAndCarrierDetails(orderId)
+activate DB
+DB --> LG : orderDetails
+deactivate DB
+LG -> LG : createQRCode(orderId)
+activate LG
+LG --> LG : qrCodeImage
+deactivate LG
+LG --> UI : shippingLabel{QRCode, orderId}
+deactivate LG
+UI --> Packer : printAndScanLabel()
+
+Packer -> UI : confirmLabelScanned(orderId)
+UI -> PC : setOrderStatus(orderId, "Label Generated")
+PC -> DB : updated
+activate DB
+DB --> PC : updated
+deactivate DB
+PC --> UI : labelConfirmed()
+
+UI -> PC : setOrderStatus(orderId, "Packed")
+PC -> DB : updated
+activate DB
+DB --> PC : updated
+deactivate DB
+PC --> UI : orderPackedAndLabeledSuccessfully()
+deactivate PC
+UI --> Packer : orderComplete()
+deactivate UI
+
+@enduml

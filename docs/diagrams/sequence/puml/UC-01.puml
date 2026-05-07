@@ -1,0 +1,87 @@
+@startuml UC-01_View_Inventory_Health_Dashboard
+title UC-01 — View Inventory Health Dashboard
+
+box "Actors"
+    actor ":WarehouseManager" as Manager
+end box
+
+box "System"
+    participant ":DashboardUI" as UI
+    participant ":InventoryController" as IC
+    participant ":IoTSensorService" as IoT
+    participant ":AlertService" as AS
+    database ":Database" as DB
+end box
+
+' ── Main Flow ──────────────────────────────
+
+Manager -> UI : openDashboard()
+activate UI
+
+UI -> IC : requestDashboardData()
+activate IC
+
+IC -> DB : fetchStockLevels()
+activate DB
+DB --> IC : stockLevels[]
+deactivate DB
+
+IC -> IoT : getSensorReadings()
+activate IoT
+IoT --> IC : weightReadings[]
+deactivate IoT
+
+IC -> IC : compareActualVsExpected(weightReadings, stockLevels)
+activate IC
+IC --> IC : discrepancyResult
+deactivate IC
+
+opt deviation > tolerance
+    IC -> AS : raiseDiscrepancyAlert(zoneId, deviation)
+    activate AS
+    AS --> IC : alertLogged
+    deactivate AS
+end
+
+IC -> DB : fetchEnvironmentalAlerts()
+activate DB
+DB --> IC : envAlerts[]
+deactivate DB
+
+IC --> UI : dashboardData{stock, sensors, discrepancies, envAlerts}
+deactivate IC
+
+UI --> Manager : displayDashboard(dashboardData)
+
+' ── Extension Point: capacity_alert ────────
+
+opt occupancy > 90%
+    activate IC
+    IC -> DB : fetchTotalOccupancy()
+    activate DB
+    DB --> IC : occupancyValue
+    deactivate DB
+    IC -> AS : notifyCapacityAlert(occupancyValue)
+    activate AS
+    AS --> UI : showCapacityAlertBanner(occupancyValue)
+    deactivate AS
+    UI --> Manager : capacityAlertBanner(occupancyValue)
+    deactivate IC
+end
+
+' ── Extension Point: expiry_check ──────────
+
+opt itemExpiryDate &lt;= today + 7days
+    activate IC
+    IC -> DB : fetchItemsNearExpiry(window=7)
+    activate DB
+    DB --> IC : expiringItems[]
+    deactivate DB
+    IC --> UI : highlightExpiringItems(expiringItems)
+    deactivate IC
+    UI --> Manager : showExpiryWarning(expiringItems)
+end
+
+deactivate UI
+
+@enduml

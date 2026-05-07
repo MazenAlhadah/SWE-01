@@ -1,0 +1,71 @@
+@startuml UC-06_View_Warehouse_Capacity_Alerts
+title UC-06 — View Warehouse Capacity Alerts\n(extends UC-01 at capacity_alert)
+
+box "Actors"
+    actor ":WarehouseManager" as Manager
+end box
+
+box "System"
+    participant ":DashboardUI" as UI
+    participant ":OccupancyMonitor" as OM
+    participant ":AlertService" as AS
+    database ":Database" as DB
+end box
+
+note over OM
+    Runs continuously in background
+    Observer Pattern — triggers on threshold breach
+end note
+
+' ── Continuous Monitoring Loop ──────────────
+
+loop continuous monitoring
+    OM -> DB : fetchTotalOccupancy()
+    activate OM
+    activate DB
+    DB --> OM : occupancyValue
+    deactivate DB
+
+    OM -> OM : evaluateThreshold(occupancyValue, threshold=90%)
+    activate OM
+    OM --> OM : thresholdResult
+    deactivate OM
+
+    opt occupancy > 90%
+        OM -> AS : notifySubscribers(occupancyValue)
+        activate AS
+        AS -> DB : logCapacityAlert(timestamp, occupancyValue)
+        activate DB
+        DB --> AS : logged
+        deactivate DB
+        AS --> UI : pushCapacityAlert(occupancyValue)
+        activate UI
+        deactivate AS
+        UI --> Manager : displayCapacityAlertBanner(occupancyValue)
+
+        Manager -> UI : openOccupancyReport()
+        UI -> OM : requestOccupancyDetails()
+        OM -> DB : fetchZoneBreakdown()
+        activate DB
+        DB --> OM : zoneOccupancy[]
+        deactivate DB
+        OM --> UI : occupancyReport{zones, totals}
+        UI --> Manager : displayFullOccupancyReport(occupancyReport)
+
+        Manager -> UI : acknowledgeAlert()
+        UI -> AS : markAlertAcknowledged()
+        activate AS
+        AS -> DB : updateAlertStatus(acknowledged)
+        activate DB
+        DB --> AS : success
+        deactivate DB
+        AS --> UI : acknowledged()
+        deactivate AS
+        UI --> Manager : confirmAlertAcknowledged()
+        deactivate UI
+    end
+
+    deactivate OM
+end
+
+@enduml

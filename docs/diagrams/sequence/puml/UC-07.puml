@@ -1,0 +1,69 @@
+@startuml UC-07_Activate_Emergency_Mode
+title UC-07 — Activate Emergency Mode
+
+box "Actors"
+    actor ":WarehouseManager" as Manager
+end box
+
+box "System"
+    participant ":AdminUI" as UI
+    participant ":EmergencyController" as EC
+    participant ":TaskService" as TS
+    participant ":DoorController" as DC
+    participant ":NotificationService" as NS
+    participant ":AuditLog" as AL
+end box
+
+' ── Main Flow ──────────────────────────────
+
+Manager -> UI : clickActivateEmergencyMode()
+activate UI
+
+UI -> EC : requestEmergencyActivation(managerId)
+activate EC
+
+EC -> EC : verifyManagerAuth(managerId)
+activate EC
+EC --> EC : authResult
+deactivate EC
+
+alt authorized
+    EC --> UI : promptForReason()
+    UI --> Manager : showReasonDialog()
+
+    Manager -> UI : enterReason(reasonText)
+    UI -> EC : activateEmergencyMode(managerId, reasonText)
+
+    EC -> TS : pauseAllPickingTasks()
+    activate TS
+    TS --> EC : allTasksPaused()
+    deactivate TS
+
+    EC -> DC : lockAllDockDoors()
+    activate DC
+    DC --> EC : doorsLocked()
+    deactivate DC
+
+    EC -> AL : persistEvent(timestamp, managerId, reasonText, "EMERGENCY_ACTIVATED")
+    activate AL
+    AL --> EC : logged()
+    deactivate AL
+
+    EC -> NS : broadcastEmergencyAlert(allActiveUsers)
+    activate NS
+    NS --> EC : notificationsSent()
+    deactivate NS
+
+    EC --> UI : emergencyModeActive()
+    deactivate EC
+    UI --> Manager : displayEmergencyModeDashboard()
+
+else not authorized
+    EC --> UI : authorizationError()
+    deactivate EC
+    UI --> Manager : showError("Insufficient Permissions")
+end
+
+deactivate UI
+
+@enduml

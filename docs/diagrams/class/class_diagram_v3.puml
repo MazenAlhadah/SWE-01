@@ -1,0 +1,711 @@
+@startuml class_diagram_v3
+skinparam monochrome true
+skinparam packageStyle rectangle
+
+package "View" {
+  class ProcurementUI {
+    + requestSupplierAnalytics(): void
+    + displaySupplierPerformanceReport(report: Report): void
+    + recordManagerDecision(supplierId: int, managerId: int): void
+    + confirmDecisionRecorded(): void
+  }
+
+  class SupplierPortal {
+    + deliverPO(poData: Object): void
+    + notifyNewPurchaseOrderReceived(): void
+    + openPurchaseOrder(poId: int): void
+    + displayPO(poData: Object): void
+    + submitConfirmation(poId: int, supplierId: int): void
+    + submitModificationRequest(poId: int, details: String): void
+    + openShipmentUpdate(poId: int): void
+    + displayShipmentForm(poData: Object): void
+    + submitDispatchDetails(poId: int, date: Date, items: List): void
+    + initiateCarrierSelection(shipmentId: int, orderId: int): void
+    + displayRecommendedCarrier(carrier: Object): void
+    + confirmCarrier(carrierId: int): void
+    + openPerformanceReport(): void
+  }
+
+  class System <<singleton>> {
+    - {static} instance: System
+    - System()
+    + {static} getInstance(): System
+    + openDashboard(): void
+    + approveSuggestions(): void
+    + overrideLocation(itemId: int, newZoneId: int): void
+    + confirmFEFOInstructions(): void
+    + selectEvaluateBeforeOrder(): void
+    + selectPreferredSupplier(supplierId: int): void
+    + reviewReorderRecommendation(): void
+    + proceedWithOrder(skuList: List): void
+    + approvePO(poId: int): void
+    + openOccupancyReport(): void
+    + acknowledgeAlert(): void
+    + clickActivateEmergencyMode(): void
+    + enterReason(reasonText: String): void
+    + openUserManagementScreen(): void
+    + selectUser(userId: int): void
+    + assignRole(userId: int, newRole: String): void
+    + requestArchivedOrder(orderId: int): void
+    + requestPickList(): void
+    + scanItem(barcode: String): void
+    + nextItemInRoute(): void
+    + openPackingStation(): void
+    + selectOrder(orderId: int): void
+    + placeItemInBin(itemId: int, binId: int): void
+    + confirmPacked(orderId: int): void
+    + resubmitAfterRecheck(orderId: int, weight: float): void
+    + confirmLabelScanned(orderId: int): void
+    + placePackedBoxOnScale(): void
+    + submitActualWeight(weight: float): void
+    + printLabel(): void
+    + scanLabel(qrCode: String): void
+    + openOrderTracker(): void
+    + confirmTransitionToNextState(orderId: int): void
+    + confirmCrossDockDelivery(itemId: int): void
+    + openPurchaseOrder(poId: int): void
+    + confirmPO(poId: int): void
+    + requestModification(poId: int, details: String): void
+    + openShipmentUpdate(poId: int): void
+    + submitDispatchDetails(poId: int, date: Date, items: List): void
+    + confirmCarrier(carrierId: int): void
+    + openPerformanceReport(): void
+  }
+}
+
+package "Controller" {
+  class ProcurementController {
+    + monitorStockLevels(): void
+    + checkSafetyStockThreshold(data: List): boolean
+    + requestReorderDetails(skus: List): void
+    + sendPOToSupplier(poId: int): void
+    + notifyPOConfirmed(poId: int): void
+    + notifyManagerModificationRequested(poId: int): void
+    + update(event: String): void {override}
+  }
+
+  class SupplierAnalyticsController {
+    + requestSupplierAnalytics(): void
+    + fetchAllSuppliers(): List
+    + calculateAccuracyScore(history: List): float
+    + fetchSupplierContracts(): List
+    + recordManagerDecision(supplierId: int, managerId: int): void
+  }
+
+  class POController {
+    + fetchPODetails(poId: int): void
+    + submitConfirmation(poId: int, supplierId: int): void
+    + submitModificationRequest(poId: int, details: String): void
+  }
+
+  class ShipmentController {
+    + fetchConfirmedPO(poId: int): void
+    + updateShipmentDispatch(poId: int, date: Date, items: List): void
+    + initReceivingStateMachine(shipmentId: int): void
+    + persistShipmentDetails(poId: int, dDate: Date, aDate: Date): void
+    + checkCarrierAssignment(shipmentId: int): void
+    + triggerCarrierSelection(shipmentId: int): void
+    + triggerBackorderCheck(shipmentId: int): void
+  }
+
+  class BackorderController {
+    + triggerBackorderCheck(shipmentId: int): void
+    + detectBackorderedItemsInShipment(shipmentId: int): List
+    + sortByWaitingTime(backorders: List): List
+    + allocateStockToCustomer(customerId: int, itemId: int, qty: int): void
+    + updateBackorderRecord(id: int, status: String): void
+    + dispatchCustomerNotification(customerId: int, itemId: int): void
+    + dispatchFloorStaffNotification(itemId: int, station: String): void
+    + updateInventory(items: List): void
+    + backordersProcessed(summary: Object): void
+  }
+
+  class AuditController {
+    + requestPerformanceAudit(supplierId: int): void
+    + calculateAccuracyScore(history: List): float
+    + persistUpdatedAccuracyScore(supplierId: int, score: float): void
+  }
+
+  class ReceivingStateMachine {
+    + initReceivingStateMachine(shipmentId: int): void
+  }
+
+  class CarrierSelectionService {
+    + initiateCarrierSelection(shipmentId: int, orderId: int): void
+    + fetchOrderDetails(orderId: int): Object
+    + fetchAvailableCarriers(): List
+    + applyCarrierSelectionLogic(carriers: List, addr: String, urg: String): List
+    + rankCarriers(carriers: List): List
+    + assignCarrier(shipmentId: int, carrierId: int): void
+  }
+
+  class LeadTimeEstimator {
+    + estimateArrival(supplierId: int, date: Date): Date
+    + computeEstimatedArrival(history: List, date: Date): Date
+    + estimateLeadTime(history: List): void
+  }
+
+  class TierRankingService {
+    + updateSupplierTierRanking(supplierId: int, score: float): void
+    + fetchAllSupplierScores(): List
+    + recomputeTierRankings(scores: List): List
+    + updateTierRankings(rankings: List): void
+  }
+
+  class LabelService {
+    + initiateLabelGeneration(orderId: int, carrierId: int): void
+  }
+
+  class ContractService {
+    + fetchSupplierContracts(): List
+    + getContractVersions(): List
+  }
+
+  class InventoryMonitor <<singleton>> {
+    - {static} instance: InventoryMonitor
+    - InventoryMonitor()
+    + {static} getInstance(): InventoryMonitor
+    + stockBelowSafety(): boolean
+    + notifyObserver(): void
+    + readWeight(zoneID: int): void
+    + getExpectedWeight(sku: String): float
+    + compareWeights(actual: float, expected: float): void
+    + subscribe(o: StockObserver): void {override}
+    + unsubscribe(o: StockObserver): void {override}
+    + notifyAll(): void {override}
+  }
+}
+
+package "Model" {
+  abstract class User {
+    - userId: int
+    - name: String
+    - email: String
+    + login(): boolean
+    + logout(): void
+    + resetPassword(): void
+    + {abstract} update(event: String): void
+  }
+
+  class Role {
+    - roleId: int
+    - roleName: String
+    + assignRole(): void
+    + revokeRole(): void
+  }
+
+  class WarehouseManager {
+    - managerId: int
+    - department: String
+    - accessLevel: int
+    + createOrder(): Order
+    + approveOrder(): boolean
+    + viewReports(): List
+    + activateEmergency(): void
+    + manageRoles(): void
+    + selectEvaluateBeforeOrder(): void
+    + selectPreferredSupplier(supplierId: int): void
+    + reviewReorderRecommendation(): void
+    + proceedWithOrder(skuList: List): void
+    + approvePO(poId: int): void
+    + openOccupancyReport(): void
+    + acknowledgeAlert(): void
+    + clickActivateEmergencyMode(): void
+    + enterReason(reasonText: String): void
+    + openUserManagementScreen(): void
+    + selectUser(userId: int): void
+    + assignRole(userId: int, newRole: String): void
+    + requestArchivedOrder(orderId: int): void
+    + notifyObserver(): void
+    + compareWeights(actual: float, expected: float): void
+    + activateEmergencyMode(reason: String): void
+    + raiseExpiryAlert(item: Item): void
+    + selectedSupplier(): void
+    + update(event: String): void {override}
+  }
+
+  abstract class Staff {
+    - staffId: int
+    - shift: String
+    + updateInventory(): void
+    + checkTasks(): List
+    + scanItem(): void
+    + update(event: String): void {override}
+  }
+
+  class Supplier {
+    - supplierId: int
+    - companyName: String
+    - contactInfo: String
+    + supplyItems(): void
+    + confirmOrder(): boolean
+    + getPerformance(): Report
+    + notifyObserver(): void
+    + applyTieredLogic(price: float, speed: float): void
+    + sendOP(): void
+    + getDeliveryHistory(): List
+  }
+
+  class Picker {
+    - pickZone: String
+    + pickItems(): List
+    + performBatchPick(): void
+    + requestPickList(): void
+    + scanItem(barcode: String): void
+    + nextItemInRoute(): void
+    + confirmCrossDockDelivery(itemId: int): void
+    + setState(state: String): void
+    + displaypicklist(): void
+    + pauseAllPickLists(): void
+    + notifyPaicker(instructions: String): void
+  }
+
+  class Packer {
+    - packStation: String
+    + packOrder(): void
+    + generateShippingLabel(): String
+    + openPackingStation(): void
+    + selectOrder(orderId: int): void
+    + placeItemInBin(itemId: int, binId: int): void
+    + confirmPacked(orderId: int): void
+    + resubmitAfterRecheck(orderId: int, weight: float): void
+    + confirmLabelScanned(orderId: int): void
+    + placePackedBoxOnScale(): void
+    + submitActualWeight(weight: float): void
+    + printLabel(): void
+    + scanLabel(qrCode: String): void
+    + setState(state: String): void
+    + scanItemsIntoBins(): void
+    + suggestBoxSize(items: List): void
+    + validateWeight(actual: float, expected: float): void
+    + generateLabel(qrCode: String): void
+  }
+
+  class FlorrStaff {
+    + notifyManager(): void
+    + openOrderTracker(): void
+    + selectOrder(orderId: int): void
+    + confirmTransitionToNextState(orderId: int): void
+  }
+
+  class Warehouse {
+    - warehouseId: int
+    - location: String
+    - capacity: int
+    - occupancyRate: float
+    + addItem(): void
+    + removeItem(): void
+    + checkCapacity(): boolean
+  }
+
+  class Zone {
+    - zoneId: int
+    - zoneType: String
+    - temperature: float
+    - humidity: float
+    + assignItem(): void
+    + getZoneCapacity(): int
+    + getZoneLocation(): void
+    + setState(state: String): void
+  }
+
+  class Inventory {
+    - inventoryId: int
+    - quantity: int
+    - safetyStock: int
+    - reservedQty: int
+    + updateStock(): void
+    + checkAvailability(): boolean
+  }
+
+  class Item {
+    - itemId: int
+    - name: String
+    - sku: String
+    - weight: float
+    - expiryDate: Date
+    + updateDetails(): void
+    + isExpired(): boolean
+    + checkStockLevel(): void
+    + computeOptimalRoute(): void
+    + getExpectedWeight(sku: String): float
+    + isNearExpiry(): boolean
+  }
+
+  class Order {
+    - orderId: int
+    - date: Date
+    - status: OrderStatus
+    - totalAmount: float
+    + createOrder(): void
+    + cancelOrder(): boolean
+    + calculateTotal(): float
+    + placeOrder(): void
+  }
+
+  class PurchaseOrder {
+    - poId: int
+    - supplierId: int
+    - digitalSignature: String
+    - estimatedArrival: Date
+    + createPO(): void
+    + approvePO(): boolean
+    + receivePO(): void
+    + generatePO(sku: String, prices: float, signature: String): void
+    + sendOP(): void
+  }
+
+  class PickList {
+    - pickListId: int
+    - optimizedRoute: String
+    - status: String
+    - batchSize: int
+    + generateRoute(): void
+    + confirmPick(): void
+    + generatePickList(): void
+    + applyFEFO(item: Item): void
+  }
+
+  class Shipment {
+    - shipmentId: int
+    - status: String
+    - carrierId: int
+    - trackingNumber: String
+    + shipOrder(): void
+    + trackShipment(): String
+    + updateLeadTime(): void
+    + setState(state: String): void
+  }
+
+  class Carrier {
+    - carrierId: int
+    - name: String
+    + assignShipment(): void
+    + selectCarrier(): boolean
+  }
+
+  class Database <<singleton>> {
+    - {static} instance: Database
+    - Database()
+    + {static} getInstance(): Database
+    + fetchAllSuppliers(): List
+    + fetchDeliveryHistory(supplierId: int): List
+    + getContractVersions(): List
+    + persistDecision(supplierId: int, managerId: int, timestamp: Date): void
+    + monitorStockLevels(): List
+    + fetchAffectedSKUs(): List
+    + fetchSKUDetails(skuList: List): List
+    + fetchSupplierOptions(skuList: List): List
+    + fetchUnitPrices(skuList: List, supplierId: int): List
+    + persistPO(poData: Object): int
+    + logPOSent(poId: int, timestamp: Date): void
+    + getPO(poId: int): Object
+    + updatePOStatus(poId: int, status: String): void
+    + logConfirmation(poId: int, timestamp: Date): void
+    + logModificationRequest(poId: int, details: String): void
+    + setShipmentState(shipmentId: int, state: String): void
+    + fetchSupplierDeliveryHistory(supplierId: int): List
+    + persistShipmentDetails(poId: int, dispatchDate: Date, arrivalDate: Date): void
+    + checkCarrierAssignment(shipmentId: int): boolean
+    + fetchOpenBackorders(items: List): List
+    + allocateStockToCustomer(customerId: int, itemId: int, quantity: int): void
+    + updateBackorderRecord(backorderId: int, status: String): void
+    + updateInventory(items: List): void
+    + fetchOrderDetails(orderId: int): Object
+    + fetchAvailableCarriers(): List
+    + updateShipmentCarrier(shipmentId: int, carrierId: int): void
+    + linkCarrierToOrder(orderId: int, carrierId: int): void
+    + persistUpdatedAccuracyScore(supplierId: int, score: float): void
+    + fetchAllSupplierScores(): List
+    + updateTierRankings(rankings: List): void
+  }
+
+  class EmergencyMode <<singleton>> {
+    - {static} instance: EmergencyMode
+    - EmergencyMode()
+    + {static} getInstance(): EmergencyMode
+    + activateEmergencyMode(reason: String): void
+    + pauseAllPickLists(): void
+    + lockDockDoors(): void
+    + broadcastAlert(devices: String): void
+    + attach(o: Observer): void {override}
+    + detach(o: Observer): void {override}
+    + notify(): void {override}
+  }
+
+  class IoTSensor {
+    - sensorId: int
+    - type: String
+    - lastReading: float
+    - timestamp: Date
+    + readValue(): float
+    + triggerAlert(): void
+    + readWeight(zoneID: int): void
+  }
+
+  class Alert {
+    - alertId: int
+    - type: String
+    - threshold: float
+    + sendAlert(): void
+    + triggerEmergency(): void
+  }
+
+  class EmergencyEvent {
+    - eventId: int
+    - reason: String
+    - timestamp: Date
+    - resolved: boolean
+    + activate(): void
+    + deactivate(): void
+  }
+
+  class Audit {
+    - auditId: int
+    - date: Date
+    - discrepancyRate: float
+    + performAudit(): void
+    + generateReport(): Report
+  }
+
+  class BackOrder {
+    - backOrderId: int
+    - reason: String
+    + createBackOrder(): void
+    + resolveBackOrder(): void
+  }
+
+  class SupplierContract {
+    - contractId: int
+    - version: int
+    - discountThreshold: float
+    + getActiveVersion(): Contract
+    + updatePricing(): void
+  }
+
+  class SupplierSelector {
+    + runTieredSupplierSelection(skuList: List): Object
+    + applySelectionRule(price: float, speed: float): Object
+  }
+
+  class POGenerator {
+    + generatePurchaseOrder(supplier: Object, skus: List): void
+    + buildPO(skus: List, qtys: List, prices: List, total: float): Object
+    + applyDigitalSignature(): Object
+  }
+
+  class NotificationService <<singleton>> {
+    - {static} instance: NotificationService
+    - NotificationService()
+    + {static} getInstance(): NotificationService
+    + notifyManagerAsync(date: Date, shipmentId: int): void
+    + dispatchCustomerNotification(customerId: int, itemId: int): void
+    + dispatchFloorStaffNotification(itemId: int, station: String): void
+    + update(event: String): void {override}
+  }
+
+  class Customer {
+    + confirmPicked(): void
+    + confirmDelivered(): void
+  }
+
+  class ShippingCarrier {
+    + setState(state: String): void
+  }
+
+  class BatchPichingSystem {
+    + requestPickList(orders: List): void
+    + getZoneLocation(): void
+    + computeOptimalRoute(): void
+  }
+
+  class SortToLight {
+    + scanItemsIntoBins(): void
+  }
+
+  class PackingMaterial {
+    + suggestBoxSize(items: List): void
+  }
+
+  class ParcelValidator {
+    + validateWeight(actual: float, expected: float): void
+    + weightOK(): boolean
+  }
+
+  class LabelGenerator {
+    + generateLabel(qrCode: String): void
+  }
+
+  class InboundGatekepper {
+    + scanArrival(shipmentID: int): void
+    + setState(state: String): void
+  }
+
+  class TieredSelector {
+    + selectSupplier(sku: String, qty: int): void
+    + applyTieredLogic(price: float, speed: float): void
+    + selectTier(price: float, speed: float, score: float): void
+  }
+
+  class AuditLog <<singleton>> {
+    - {static} instance: AuditLog
+    - AuditLog()
+    + {static} getInstance(): AuditLog
+    + triggerAlert(discrepancy: String): void
+    + logReading(timestamp: Date, value: float): void
+    + broadcastAlert(devices: String): void
+  }
+
+  class DockController {
+    + lockDockDoors(): void
+    + update(event: String): void {override}
+  }
+
+  class ExpiryWatchdog {
+    + scanExpiryDates(inventory: List): void
+    + isNearExpiry(days: int): boolean
+    + applyFEFO(item: Item): void
+    + notifyPaicker(instructions: String): void
+    + raiseExpiryAlert(item: Item): void
+  }
+
+  class SupplierAnalytics {
+    + requestPerformanceReport(supplierId: int): void
+    + getDeliveryHistory(): void
+    + calculateAccuracyScore(score: String): float
+  }
+
+  interface StockSubject {
+    + subscribe(o: StockObserver): void
+    + unsubscribe(o: StockObserver): void
+    + notifyAll(): void
+  }
+
+  interface StockObserver {
+    + update(event: String): void
+  }
+
+  interface Subject {
+    + attach(o: Observer): void
+    + detach(o: Observer): void
+    + notify(): void
+  }
+
+  interface Observer {
+    + update(event: String): void
+  }
+
+  enum InboundStatus {
+    EXPECTED
+    AT_DOCK
+    BEING_INSPECTED
+    STORED
+  }
+
+  enum OrderStatus {
+    PROCESSING
+    PICKING
+    PACKING
+    SHIPPED
+    DELIVERED
+  }
+}
+
+' Relationships
+
+' Inheritance
+User <|-- WarehouseManager
+User <|-- Staff
+Staff <|-- Picker
+Staff <|-- Packer
+Staff <|-- FlorrStaff
+
+' Realizations
+InventoryMonitor ..|> StockSubject
+ProcurementController ..|> StockObserver
+EmergencyMode ..|> Subject
+WarehouseManager ..|> Observer
+Staff ..|> Observer
+NotificationService ..|> Observer
+DockController ..|> Observer
+ProcurementController ..|> Observer
+
+' Singleton Self-Associations
+System "1" --> "1" System : instance
+Database "1" --> "1" Database : instance
+EmergencyMode "1" --> "1" EmergencyMode : instance
+NotificationService "1" --> "1" NotificationService : instance
+AuditLog "1" --> "1" AuditLog : instance
+InventoryMonitor "1" --> "1" InventoryMonitor : instance
+
+' Composition & Association Class
+Warehouse "1" *-- "0..*" Zone : zones
+Zone "1" -- "0..*" Item : stores
+(Zone, Item) .. Inventory
+
+' Aggregation
+Order "1" o-- "1..*" Item : contains
+PurchaseOrder "1" o-- "1..*" Item : skus
+PickList "1" o-- "1..*" Item : items
+Shipment "1" o-- "1" Order : ships
+Shipment "1" o-- "0..1" Carrier : assigned
+
+' Qualified Associations
+WarehouseManager "1" -- "0..*" Order : manages [orderId]
+Database "1" -- "0..*" Supplier : retrieves [supplierId]
+
+' General Associations
+ProcurementUI "1" -- "1" ProcurementController : delegates
+SupplierPortal "1" -- "1" POController : delegates
+System "1" -- "1" ProcurementController : coordinates
+System "1" -- "1" ShipmentController : coordinates
+System "1" -- "1" AuditController : coordinates
+
+ProcurementController "1" -- "1" Database : uses
+POController "1" -- "1" Database : uses
+ShipmentController "1" -- "1" Database : uses
+AuditController "1" -- "1" Database : uses
+BackorderController "1" -- "1" Database : uses
+
+ProcurementController "1" --> "1" SupplierSelector : uses
+ProcurementController "1" --> "1" POGenerator : uses
+ShipmentController "1" --> "1" CarrierSelectionService : uses
+ShipmentController "1" --> "1" ReceivingStateMachine : uses
+ShipmentController "1" --> "1" BackorderController : uses
+ShipmentController "1" --> "1" LeadTimeEstimator : uses
+
+SupplierAnalyticsController "1" -- "1" Database : uses
+AuditController "1" -- "1" TierRankingService : uses
+
+WarehouseManager "1" -- "0..*" PurchaseOrder : approves
+Supplier "1" -- "0..*" PurchaseOrder : receives
+Supplier "1" -- "1" SupplierContract : holds
+
+IoTSensor "1" -- "1" Zone : monitors
+
+Alert "0..*" -- "1" EmergencyEvent : triggers
+EmergencyMode "1" -- "0..*" EmergencyEvent : handles
+
+' Associations for previously disconnected classes
+User "1" -- "1..*" Role : has
+Customer "1" -- "0..*" Order : places
+Customer "1" -- "0..*" Shipment : tracks
+FlorrStaff "1" -- "1" System : interacts
+Picker "1" --> "1" BatchPichingSystem : uses
+Packer "1" --> "1" SortToLight : uses
+Packer "1" --> "1" PackingMaterial : requests
+Packer "1" --> "1" ParcelValidator : uses
+Packer "1" --> "1" LabelGenerator : uses
+InboundGatekepper "1" -- "0..*" Shipment : scans
+SupplierSelector "1" --> "1" TieredSelector : applies
+InventoryMonitor "1" --> "1" ExpiryWatchdog : triggers
+SupplierAnalyticsController "1" --> "1" SupplierAnalytics : generates
+
+' MVC Dependencies (Cross-package associations)
+ProcurementUI "1" --> "1" ProcurementController : forwards input
+SupplierPortal "1" --> "1" POController : forwards input
+System "1" --> "1" ProcurementController : routes to
+System "1" --> "1" ShipmentController : routes to
+System "1" --> "1" AuditController : routes to
+
+@enduml

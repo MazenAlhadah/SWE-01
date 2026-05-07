@@ -1,0 +1,69 @@
+@startuml UC-03_Monitor_Perishable_Expiry_Items
+title UC-03 — Monitor Perishable & Expiry Items\n(extends UC-01 at expiry_check)
+
+box "Actors"
+    actor ":WarehouseManager" as Manager
+end box
+
+box "System"
+    participant ":DashboardUI" as UI
+    participant ":ExpiryMonitor" as EM
+    participant ":PickingService" as PS
+    database ":Database" as DB
+end box
+
+note over Manager, DB
+    Triggered from UC-01
+    Extension Point: expiry_check
+    Condition: [itemExpiryDate <= today + 7days]
+end note
+
+' ── Main Flow ──────────────────────────────
+
+UI -> EM : runExpiryScan()
+activate UI
+activate EM
+
+EM -> DB : fetchAllItemsWithExpiry()
+activate DB
+DB --> EM : items[]
+deactivate DB
+
+EM -> EM : filterItemsExpiringSoon(items, window=7)
+activate EM
+EM --> EM : filteredItems[]
+deactivate EM
+
+alt expiringItems not empty
+    EM --> UI : expiringItems[]
+    UI --> Manager : displayExpiryWarnings(expiringItems)
+
+    EM -> PS : generateFEFOPickOrder(expiringItems)
+    activate PS
+    PS -> DB : updatePickingPriority(FEFO, expiringItems)
+    activate DB
+    DB --> PS : success
+    deactivate DB
+    PS --> EM : fefoInstructionsReady()
+    deactivate PS
+
+    EM --> UI : showFEFOInstructions(fefoOrder)
+    deactivate EM
+    UI --> Manager : displayFEFOPickingInstructions()
+
+    Manager -> UI : confirmFEFOInstructions()
+    UI -> PS : dispatchFEFOToFloorStaff()
+    activate PS
+    PS --> UI : instructionsSent()
+    deactivate PS
+    UI --> Manager : confirmInstructionsSentToFloorStaff()
+
+else no expiring items
+    EM --> UI : noExpiryWarnings()
+    deactivate EM
+    UI --> Manager : displayNoExpiryWarnings()
+end
+
+deactivate UI
+
+@enduml

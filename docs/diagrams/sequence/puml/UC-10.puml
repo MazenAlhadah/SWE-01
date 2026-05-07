@@ -1,0 +1,98 @@
+@startuml UC-10_Perform_Batch_Picking
+title UC-10 — Perform Batch Picking
+
+box "Actors"
+    actor ":Picker" as Picker
+end box
+
+box "System"
+    participant ":PickerDeviceUI" as UI
+    participant ":PickingController" as PC
+    participant ":RouteOptimizer" as RO
+    participant ":OrderService" as OS
+    database ":Database" as DB
+end box
+
+' ── Main Flow ──────────────────────────────
+
+Picker -> UI : requestPickList()
+activate UI
+
+UI -> PC : requestBatchPickList(pickerId)
+activate PC
+
+PC -> OS : fetchOpenOrders()
+activate OS
+OS -> DB : getOrdersReadyForPicking()
+activate DB
+DB --> OS : openOrders[]
+deactivate DB
+OS --> PC : openOrders[]
+deactivate OS
+
+PC -> RO : runBatchPickRouteLogic(openOrders)
+activate RO
+
+RO -> DB : fetchWarehouseLayout()
+activate DB
+DB --> RO : layout{zones, aisles, binLocations}
+deactivate DB
+
+RO -> RO : groupOrdersIntoBatch(openOrders)
+activate RO
+RO --> RO : batch[]
+deactivate RO
+RO -> RO : computeOptimalWalkingRoute(batch, layout)
+activate RO
+RO --> RO : optimizedRoute
+deactivate RO
+
+RO --> PC : pickList{items, route, binLocations}
+deactivate RO
+
+PC -> DB : persistPickList(pickerId, pickList)
+activate DB
+DB --> PC : saved
+deactivate DB
+
+PC --> UI : displayPickList(pickList)
+UI --> Picker : showOptimizedPickListAndRoute(pickList)
+
+' ── Loop: Picker scans items ────────────────
+
+loop for each bin in route
+    loop for each item in bin
+        Picker -> UI : scanItem(barcode)
+        UI -> PC : confirmItemPicked(barcode, pickerId)
+        PC -> DB : markItemPickedInOrder(barcode)
+        activate DB
+        DB --> PC : updated
+        deactivate DB
+        PC --> UI : itemConfirmed()
+        UI --> Picker : itemConfirmed()
+    end
+    Picker -> UI : navigateToNextBin()
+    UI -> PC : nextBinInRoute()
+    PC --> UI : nextBinLocation()
+    UI --> Picker : nextBinLocation()
+end
+
+PC -> OS : updateOrderStatus(orderId, "Picking")
+activate OS
+OS -> DB : setOrderState(orderId, "Picking")
+activate DB
+DB --> OS : updated
+deactivate DB
+OS --> PC : statusUpdated()
+deactivate OS
+
+PC --> UI : allItemsCollected_ProceedToPacking()
+deactivate PC
+UI --> Picker : proceedToPacking()
+deactivate UI
+
+ref over Picker, DB
+    UC-14: Track Order Fulfillment Status
+end ref
+
+@enduml

@@ -1,0 +1,87 @@
+@startuml UC-13_Generate_Scan_Shipping_Label
+title UC-13 — Generate & Scan Shipping Label\n(included by UC-11)
+
+box "Actors"
+    actor ":Packer" as Packer
+end box
+
+box "System"
+    participant ":PackingUI" as UI
+    participant ":LabelService" as LS
+    participant ":QRCodeGenerator" as QR
+    database ":Database" as DB
+end box
+
+note over Packer, DB
+    Precondition: Order packed and weight validated
+end note
+
+' ── Main Flow ──────────────────────────────
+
+UI -> LS : generateLabel(orderId)
+activate UI
+activate LS
+
+LS -> DB : fetchOrderDetails(orderId)
+activate DB
+DB --> LS : orderDetails{customerId, items, carrierId, address}
+deactivate DB
+
+LS -> DB : fetchCarrierDetails(carrierId)
+activate DB
+DB --> LS : carrierDetails
+deactivate DB
+
+LS -> QR : generateQRCode(orderId)
+activate QR
+QR -> QR : encodeOrderId(orderId)
+activate QR
+QR --> QR : encodedData
+deactivate QR
+QR --> LS : qrCodeImage
+deactivate QR
+
+LS -> LS : buildShippingLabel(orderDetails, carrierDetails, qrCodeImage)
+activate LS
+LS --> LS : labelData
+deactivate LS
+
+LS -> DB : storeLabel(orderId, labelData)
+activate DB
+DB --> LS : stored
+deactivate DB
+
+LS --> UI : shippingLabelReady(labelPreview)
+UI --> Packer : displayLabelPreview(labelPreview)
+
+Packer -> UI : printLabel()
+UI -> LS : triggerPrint(labelId)
+LS --> UI : printJobSent()
+UI --> Packer : labelPrinted_AttachAndScan()
+deactivate LS
+
+Packer -> UI : scanLabel(qrCode)
+UI -> LS : confirmLabelAttached(orderId, qrCode)
+activate LS
+LS -> LS : verifyQRMatchesOrder(qrCode, orderId)
+activate LS
+LS --> LS : verificationResult
+deactivate LS
+
+alt QR matches order
+    LS -> DB : setOrderStatus(orderId, "Label Generated")
+    activate DB
+    DB --> LS : updated
+    deactivate DB
+    LS --> UI : labelConfirmed()
+    UI --> Packer : labelConfirmed_OrderLinkedToBox()
+
+else QR mismatch
+    LS --> UI : mismatchError(orderId)
+    UI --> Packer : alertWrongLabel_ReprintRequired()
+end
+
+deactivate LS
+deactivate UI
+
+@enduml

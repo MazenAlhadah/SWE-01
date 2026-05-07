@@ -1,0 +1,75 @@
+@startuml UC-08_Manage_User_Roles_Access
+title UC-08 — Manage User Roles & Access
+
+box "Actors"
+    actor ":WarehouseManager" as Manager
+end box
+
+box "System"
+    participant ":AdminUI" as UI
+    participant ":UserManagementController" as UMC
+    participant ":RBACService" as RBAC
+    database ":Database" as DB
+end box
+
+' ── Main Flow ──────────────────────────────
+
+Manager -> UI : openUserManagementScreen()
+activate UI
+
+UI -> UMC : fetchUserAccounts()
+activate UMC
+UMC -> DB : getAllUsers()
+activate DB
+DB --> UMC : users[]
+deactivate DB
+UMC --> UI : displayUsers(users)
+UI --> Manager : showUserList(users)
+
+Manager -> UI : selectUser(userId)
+UI -> UMC : getUserDetails(userId)
+UMC -> DB : fetchUser(userId)
+activate DB
+DB --> UMC : userRecord
+deactivate DB
+UMC -> RBAC : getAvailableRoles()
+activate RBAC
+RBAC --> UMC : roles[Manager, Picker, Packer, Supplier]
+deactivate RBAC
+UMC --> UI : displayRBACOptions(userRecord, roles)
+UI --> Manager : showRoleAssignmentPanel(userRecord, roles)
+
+Manager -> UI : assignRole(userId, newRole)
+UI -> UMC : updateUserRole(userId, newRole)
+UMC -> RBAC : applyRolePermissions(userId, newRole)
+activate RBAC
+RBAC -> DB : updateRoleRecord(userId, newRole)
+activate DB
+DB --> RBAC : success
+deactivate DB
+
+RBAC -> RBAC : enforceAccessRestrictions(userId, newRole)
+activate RBAC
+RBAC --> RBAC : restrictionsApplied
+deactivate RBAC
+note right of RBAC
+    Floor Staff → Picking & Packing only
+    Manager → All modules (RBAC FR25)
+    Supplier → Supplier portal only
+end note
+
+RBAC --> UMC : permissionsApplied()
+deactivate RBAC
+
+UMC -> DB : logRoleChange(userId, newRole, managerId, timestamp)
+activate DB
+DB --> UMC : logged
+deactivate DB
+
+UMC --> UI : roleUpdateConfirmed()
+deactivate UMC
+UI --> Manager : confirmRoleUpdatedAndApplied()
+
+deactivate UI
+
+@enduml
