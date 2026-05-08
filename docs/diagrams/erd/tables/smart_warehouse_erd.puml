@@ -1,0 +1,394 @@
+@startuml SmartWarehouse_RelationalDataModel
+!define PRIMARY_KEY(x) <b><color:#b8860b>PK</color></b> x
+!define FOREIGN_KEY(x) <color:#aaaaaa>FK</color> x
+!define NULLABLE(x) <color:#888888><i>x</i></color>
+
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 80
+skinparam defaultFontSize 11
+skinparam defaultFontName Arial
+
+skinparam entity {
+  BackgroundColor #F0F4FF
+  BorderColor #3A5DAE
+  FontColor #1a1a2e
+  FontStyle bold
+  HeaderBackgroundColor #3A5DAE
+  HeaderFontColor #ffffff
+}
+
+skinparam ArrowColor #3A5DAE
+
+' ============================================================
+' ZONE 1: USER & ROLES
+' ============================================================
+together {
+  entity "**USER**" as USER {
+    PRIMARY_KEY(user_id : UUID)
+    ==
+    name : VARCHAR(100)
+    password_hash : VARCHAR(255)
+    email : VARCHAR(150) UNIQUE
+    role : VARCHAR(50)
+    is_active : BOOLEAN
+    created_at : TIMESTAMP
+  }
+
+  entity "**CUSTOMER**" as CUSTOMER {
+    PRIMARY_KEY(customer_id : UUID)
+    ==
+    FOREIGN_KEY(user_id : UUID)
+    full_name : VARCHAR(150)
+    NULLABLE(default_address : TEXT)
+  }
+
+  entity "**SUPPLIER**" as SUPPLIER {
+    PRIMARY_KEY(supplier_id : UUID)
+    ==
+    FOREIGN_KEY(user_id : UUID)
+    company_name : VARCHAR(150)
+    NULLABLE(contact_info : TEXT)
+    NULLABLE(accuracy_score : NUMERIC(5,2))
+    NULLABLE(tier_rank : SMALLINT)
+  }
+
+  entity "**MANAGER**" as MANAGER {
+    PRIMARY_KEY(manager_id : UUID)
+    ==
+    FOREIGN_KEY(user_id : UUID)
+  }
+
+  entity "**PICKER**" as PICKER {
+    PRIMARY_KEY(picker_id : UUID)
+    ==
+    FOREIGN_KEY(user_id : UUID)
+  }
+
+  entity "**PACKER**" as PACKER {
+    PRIMARY_KEY(packer_id : UUID)
+    ==
+    FOREIGN_KEY(user_id : UUID)
+  }
+}
+
+' ============================================================
+' ZONE 2: WAREHOUSE PHYSICAL STRUCTURE
+' ============================================================
+together {
+  entity "**WAREHOUSE_ZONE**" as WAREHOUSE_ZONE {
+    PRIMARY_KEY(zone_id : UUID)
+    ==
+    zone_name : VARCHAR(100)
+    zone_type : VARCHAR(50)
+    total_capacity_m3 : NUMERIC(10,2)
+    current_occupancy_m3 : NUMERIC(10,2)
+    NULLABLE(temperature : NUMERIC(5,2))
+    NULLABLE(humidity : NUMERIC(5,2))
+  }
+
+  entity "**AISLE**" as AISLE {
+    PRIMARY_KEY(aisle_id : UUID)
+    ==
+    FOREIGN_KEY(zone_id : UUID)
+    aisle_label : VARCHAR(20)
+    NULLABLE(discrepancy_rate : NUMERIC(5,2))
+    NULLABLE(last_cycle_count : DATE)
+  }
+
+  entity "**BIN**" as BIN {
+    PRIMARY_KEY(bin_id : UUID)
+    ==
+    FOREIGN_KEY(zone_id : UUID)
+    FOREIGN_KEY(aisle_id : UUID)
+    location_code : VARCHAR(50) UNIQUE
+    max_capacity_m3 : NUMERIC(10,2)
+    current_usage_m3 : NUMERIC(10,2)
+  }
+}
+
+' ============================================================
+' ZONE 3: ITEM & INVENTORY
+' ============================================================
+together {
+  entity "**ITEM**" as ITEM {
+    PRIMARY_KEY(item_id : UUID)
+    ==
+    sku : VARCHAR(100) UNIQUE
+    name : VARCHAR(200)
+    NULLABLE(weight : NUMERIC(10,3))
+    NULLABLE(expiry_date : DATE)
+    unit_price : NUMERIC(12,2)
+    NULLABLE(sales_velocity : NUMERIC(10,2))
+    is_sensitive : BOOLEAN
+    safety_stock_qty : INTEGER
+    NULLABLE(height_cm : NUMERIC(8,2))
+    NULLABLE(width_cm : NUMERIC(8,2))
+    NULLABLE(depth_cm : NUMERIC(8,2))
+  }
+
+  entity "**INVENTORY**" as INVENTORY {
+    PRIMARY_KEY(inventory_id : UUID)
+    ==
+    FOREIGN_KEY(item_id : UUID)
+    FOREIGN_KEY(bin_id : UUID)
+    quantity_available : INTEGER
+    quantity_reserved : INTEGER
+    safety_stock : INTEGER
+    state : VARCHAR(50)
+    NULLABLE(last_sensor_weight_kg : NUMERIC(10,3))
+    NULLABLE(sensor_timestamp : TIMESTAMP)
+  }
+
+  entity "**IOT_SENSOR**" as IOT_SENSOR {
+    PRIMARY_KEY(sensor_id : UUID)
+    ==
+    FOREIGN_KEY(bin_id : UUID)
+    type : VARCHAR(50)
+    NULLABLE(last_reading : NUMERIC(10,3))
+    NULLABLE(expected_weight_kg : NUMERIC(10,3))
+    NULLABLE(deviation_kg : NUMERIC(10,3))
+    has_discrepancy : BOOLEAN
+    NULLABLE(timestamp : TIMESTAMP)
+    NULLABLE(tamper_hash : VARCHAR(255))
+  }
+}
+
+' ============================================================
+' ZONE 4: PROCUREMENT
+' ============================================================
+together {
+  entity "**SUPPLIER_CONTRACT**" as SUPPLIER_CONTRACT {
+    PRIMARY_KEY(contract_id : UUID)
+    ==
+    FOREIGN_KEY(supplier_id : UUID)
+    FOREIGN_KEY(item_id : UUID)
+    version : INTEGER
+    unit_price : NUMERIC(12,2)
+    NULLABLE(discount_threshold : NUMERIC(12,2))
+    NULLABLE(discount_percentage : NUMERIC(5,2))
+    valid_from : DATE
+    NULLABLE(valid_to : DATE)
+  }
+
+  entity "**PURCHASE_ORDER**" as PURCHASE_ORDER {
+    PRIMARY_KEY(po_id : UUID)
+    ==
+    FOREIGN_KEY(supplier_id : UUID)
+    FOREIGN_KEY(manager_id : UUID)
+    NULLABLE(FOREIGN_KEY(contract_id : UUID))
+    status : VARCHAR(50)
+    total_cost : NUMERIC(15,2)
+    NULLABLE(digital_signature : TEXT)
+    NULLABLE(estimated_arrival : DATE)
+    generated_at : TIMESTAMP
+    NULLABLE(confirmed_at : TIMESTAMP)
+  }
+
+  entity "**PO_LINE_ITEM**" as PO_LINE_ITEM {
+    PRIMARY_KEY(po_line_id : UUID)
+    ==
+    FOREIGN_KEY(po_id : UUID)
+    FOREIGN_KEY(item_id : UUID)
+    quantity_ordered : INTEGER
+    quantity_received : INTEGER
+    unit_price : NUMERIC(12,2)
+  }
+}
+
+together {
+  entity "**SHIPPING_CARRIER**" as SHIPPING_CARRIER {
+    PRIMARY_KEY(carrier_id : UUID)
+    ==
+    carrier_name : VARCHAR(150)
+    NULLABLE(delivery_speed_days : INTEGER)
+    NULLABLE(base_cost : NUMERIC(10,2))
+    NULLABLE(coverage_regions : TEXT)
+  }
+
+  entity "**SHIPMENT**" as SHIPMENT {
+    PRIMARY_KEY(shipment_id : UUID)
+    ==
+    FOREIGN_KEY(po_id : UUID)
+    FOREIGN_KEY(carrier_id : UUID)
+    NULLABLE(tracking_number : VARCHAR(100))
+    NULLABLE(dispatch_date : DATE)
+    NULLABLE(estimated_arrival : DATE)
+    NULLABLE(actual_arrival : DATE)
+    state : VARCHAR(50)
+  }
+}
+
+' ============================================================
+' ZONE 5: CUSTOMER ORDERS
+' ============================================================
+together {
+  entity "**CUSTOMER_ORDER**" as CUSTOMER_ORDER {
+    PRIMARY_KEY(order_id : UUID)
+    ==
+    FOREIGN_KEY(customer_id : UUID)
+    NULLABLE(FOREIGN_KEY(picker_id : UUID))
+    NULLABLE(FOREIGN_KEY(packer_id : UUID))
+    FOREIGN_KEY(carrier_id : UUID)
+    status : VARCHAR(50)
+    total_amount : NUMERIC(15,2)
+    shipping_address : TEXT
+    urgency : VARCHAR(20)
+    date : DATE
+    created_at : TIMESTAMP
+    NULLABLE(shipped_at : TIMESTAMP)
+    NULLABLE(delivered_at : TIMESTAMP)
+  }
+
+  entity "**ORDER_LINE_ITEM**" as ORDER_LINE_ITEM {
+    PRIMARY_KEY(order_line_id : UUID)
+    ==
+    FOREIGN_KEY(order_id : UUID)
+    FOREIGN_KEY(item_id : UUID)
+    quantity : INTEGER
+    state : VARCHAR(50)
+    unit_price : NUMERIC(12,2)
+  }
+}
+
+together {
+  entity "**SHIPPING_LABEL**" as SHIPPING_LABEL {
+    PRIMARY_KEY(label_id : UUID)
+    ==
+    FOREIGN_KEY(order_id : UUID) UNIQUE
+    FOREIGN_KEY(carrier_id : UUID)
+    qr_code : TEXT
+    generated_at : TIMESTAMP
+    NULLABLE(scanned_at : TIMESTAMP)
+  }
+
+  entity "**BACKORDER**" as BACKORDER {
+    PRIMARY_KEY(backorder_id : UUID)
+    ==
+    FOREIGN_KEY(order_line_id : UUID) UNIQUE
+    FOREIGN_KEY(item_id : UUID)
+    quantity_needed : INTEGER
+    NULLABLE(reason : TEXT)
+    status : VARCHAR(50)
+    created_at : TIMESTAMP
+    NULLABLE(fulfilled_at : TIMESTAMP)
+  }
+}
+
+' ============================================================
+' ZONE 6: PICKING
+' ============================================================
+together {
+  entity "**PICK_LIST**" as PICK_LIST {
+    PRIMARY_KEY(picklist_id : UUID)
+    ==
+    FOREIGN_KEY(picker_id : UUID)
+    NULLABLE(optimized_route : TEXT)
+    batch_size : INTEGER
+    status : VARCHAR(50)
+    created_at : TIMESTAMP
+    NULLABLE(completed_at : TIMESTAMP)
+  }
+
+  entity "**PICK_LIST_ITEM**" as PICK_LIST_ITEM {
+    PRIMARY_KEY(pl_item_id : UUID)
+    ==
+    FOREIGN_KEY(picklist_id : UUID)
+    FOREIGN_KEY(order_line_id : UUID)
+    FOREIGN_KEY(bin_id : UUID)
+    is_picked : BOOLEAN
+    NULLABLE(picked_at : TIMESTAMP)
+  }
+}
+
+' ============================================================
+' ZONE 7: AUDIT & SYSTEM EVENTS
+' ============================================================
+together {
+  entity "**AUDIT_LOG**" as AUDIT_LOG {
+    PRIMARY_KEY(log_id : UUID)
+    ==
+    NULLABLE(FOREIGN_KEY(user_id : UUID))
+    NULLABLE(FOREIGN_KEY(sensor_id : UUID))
+    event_type : VARCHAR(100)
+    NULLABLE(event_detail : TEXT)
+    NULLABLE(reason : TEXT)
+    NULLABLE(discrepancy_rate : NUMERIC(5,2))
+    timestamp : TIMESTAMP
+  }
+
+  entity "**EMERGENCY_EVENT**" as EMERGENCY_EVENT {
+    PRIMARY_KEY(event_id : UUID)
+    ==
+    FOREIGN_KEY(user_id : UUID)
+    reason : TEXT
+    timestamp : TIMESTAMP
+    resolved : BOOLEAN
+  }
+
+  entity "**ARCHIVED_ORDER**" as ARCHIVED_ORDER {
+    PRIMARY_KEY(archive_id : UUID)
+    ==
+    FOREIGN_KEY(order_id : UUID) UNIQUE
+    archive_data : JSONB
+    archived_at : TIMESTAMP
+  }
+}
+
+' ============================================================
+' RELATIONSHIPS
+' ============================================================
+
+' Zone 1
+USER ||--o| CUSTOMER           : "is a"
+USER ||--o| SUPPLIER           : "is a"
+USER ||--o| MANAGER            : "is a"
+USER ||--o| PICKER             : "is a"
+USER ||--o| PACKER             : "is a"
+
+' Zone 2
+WAREHOUSE_ZONE ||--|{ AISLE    : "contains"
+WAREHOUSE_ZONE ||--|{ BIN      : "has"
+AISLE          ||--|{ BIN      : "groups"
+
+' Zone 3
+ITEM      ||--|{ INVENTORY     : "tracked in"
+BIN       ||--o{ INVENTORY     : "stores"
+BIN       ||--|{ IOT_SENSOR    : "monitored by"
+
+' Zone 4
+SUPPLIER         ||--o{ SUPPLIER_CONTRACT : "signs"
+ITEM             ||--o{ SUPPLIER_CONTRACT : "covered by"
+SUPPLIER         ||--o{ PURCHASE_ORDER   : "receives"
+MANAGER          ||--o{ PURCHASE_ORDER   : "approves"
+SUPPLIER_CONTRACT|o--o{ PURCHASE_ORDER   : "governs"
+PURCHASE_ORDER   ||--|{ PO_LINE_ITEM     : "contains"
+ITEM             ||--o{ PO_LINE_ITEM     : "listed in"
+PURCHASE_ORDER   ||--o{ SHIPMENT         : "results in"
+SHIPPING_CARRIER ||--o{ SHIPMENT         : "handles"
+
+' Zone 5
+CUSTOMER         ||--o{ CUSTOMER_ORDER   : "places"
+PICKER           |o--o{ CUSTOMER_ORDER   : "picks for"
+PACKER           |o--o{ CUSTOMER_ORDER   : "packs for"
+SHIPPING_CARRIER ||--o{ CUSTOMER_ORDER   : "delivers"
+CUSTOMER_ORDER   ||--|{ ORDER_LINE_ITEM  : "contains"
+ITEM             ||--o{ ORDER_LINE_ITEM  : "included as"
+CUSTOMER_ORDER   ||--o| SHIPPING_LABEL  : "has"
+SHIPPING_CARRIER ||--o{ SHIPPING_LABEL  : "used in"
+ORDER_LINE_ITEM  ||--o| BACKORDER       : "generates"
+ITEM             ||--o{ BACKORDER       : "backordered for"
+
+' Zone 6
+PICKER          ||--o{ PICK_LIST        : "assigned to"
+PICK_LIST       ||--|{ PICK_LIST_ITEM   : "includes"
+ORDER_LINE_ITEM ||--o| PICK_LIST_ITEM   : "linked to"
+BIN             ||--o{ PICK_LIST_ITEM   : "picked from"
+
+' Zone 7
+USER            |o--o{ AUDIT_LOG        : "triggers"
+IOT_SENSOR      |o--o{ AUDIT_LOG        : "triggers (system)"
+USER            |o--o{ EMERGENCY_EVENT  : "reports"
+CUSTOMER_ORDER  |o--o| ARCHIVED_ORDER   : "archived as"
+
+@enduml

@@ -1,0 +1,297 @@
+// ============================================================
+// Smart Warehouse System — dbdiagram.io format
+// ============================================================
+
+// ============================================================
+// ZONE 1: USER & ROLES
+// ============================================================
+
+Table user {
+  user_id       uuid        [pk, default: `gen_random_uuid()`]
+  name          varchar(100) [not null]
+  password_hash varchar(255) [not null]
+  email         varchar(150) [not null, unique]
+  role          varchar(50)  [not null, note: 'customer | supplier | manager | picker | packer']
+  is_active     boolean      [not null, default: true]
+  created_at    timestamp    [not null, default: `now()`]
+}
+
+Table customer {
+  customer_id     uuid         [pk, default: `gen_random_uuid()`]
+  user_id         uuid         [not null, unique, ref: - user.user_id]
+  full_name       varchar(150) [not null]
+  default_address text
+}
+
+Table supplier {
+  supplier_id    uuid         [pk, default: `gen_random_uuid()`]
+  user_id        uuid         [not null, unique, ref: - user.user_id]
+  company_name   varchar(150) [not null]
+  contact_info   text
+  accuracy_score numeric(5,2)
+  tier_rank      smallint
+}
+
+Table manager {
+  manager_id uuid [pk, default: `gen_random_uuid()`]
+  user_id    uuid [not null, unique, ref: - user.user_id]
+}
+
+Table picker {
+  picker_id uuid [pk, default: `gen_random_uuid()`]
+  user_id   uuid [not null, unique, ref: - user.user_id]
+}
+
+Table packer {
+  packer_id uuid [pk, default: `gen_random_uuid()`]
+  user_id   uuid [not null, unique, ref: - user.user_id]
+}
+
+// ============================================================
+// ZONE 2: WAREHOUSE PHYSICAL STRUCTURE
+// ============================================================
+
+Table warehouse_zone {
+  zone_id              uuid          [pk, default: `gen_random_uuid()`]
+  zone_name            varchar(100)  [not null]
+  zone_type            varchar(50)   [not null]
+  total_capacity_m3    numeric(10,2) [not null]
+  current_occupancy_m3 numeric(10,2) [not null, default: 0]
+  temperature          numeric(5,2)
+  humidity             numeric(5,2)
+}
+
+Table aisle {
+  aisle_id         uuid        [pk, default: `gen_random_uuid()`]
+  zone_id          uuid        [not null, ref: > warehouse_zone.zone_id]
+  aisle_label      varchar(20) [not null]
+  discrepancy_rate numeric(5,2)
+  last_cycle_count date
+}
+
+Table bin {
+  bin_id           uuid          [pk, default: `gen_random_uuid()`]
+  zone_id          uuid          [not null, ref: > warehouse_zone.zone_id]
+  aisle_id         uuid          [not null, ref: > aisle.aisle_id]
+  location_code    varchar(50)   [not null, unique]
+  max_capacity_m3  numeric(10,2) [not null]
+  current_usage_m3 numeric(10,2) [not null, default: 0]
+}
+
+// ============================================================
+// ZONE 3: ITEM & INVENTORY
+// ============================================================
+
+Table item {
+  item_id          uuid          [pk, default: `gen_random_uuid()`]
+  sku              varchar(100)  [not null, unique]
+  name             varchar(200)  [not null]
+  weight           numeric(10,3)
+  expiry_date      date
+  unit_price       numeric(12,2) [not null]
+  sales_velocity   numeric(10,2)
+  is_sensitive     boolean       [not null, default: false]
+  safety_stock_qty integer       [not null, default: 0]
+  height_cm        numeric(8,2)
+  width_cm         numeric(8,2)
+  depth_cm         numeric(8,2)
+}
+
+Table inventory {
+  inventory_id          uuid          [pk, default: `gen_random_uuid()`]
+  item_id               uuid          [not null, ref: > item.item_id]
+  bin_id                uuid          [not null, ref: > bin.bin_id]
+  quantity_available    integer       [not null, default: 0]
+  quantity_reserved     integer       [not null, default: 0]
+  safety_stock          integer       [not null, default: 0]
+  state                 varchar(50)   [not null, default: 'available', note: 'available | reserved | damaged | expired']
+  last_sensor_weight_kg numeric(10,3)
+  sensor_timestamp      timestamp
+
+  indexes {
+    (item_id, bin_id) [unique]
+  }
+}
+
+Table iot_sensor {
+  sensor_id          uuid          [pk, default: `gen_random_uuid()`]
+  bin_id             uuid          [not null, ref: > bin.bin_id]
+  type               varchar(50)   [not null]
+  last_reading       numeric(10,3)
+  expected_weight_kg numeric(10,3)
+  deviation_kg       numeric(10,3)
+  has_discrepancy    boolean       [not null, default: false]
+  timestamp          timestamp
+  tamper_hash        varchar(255)
+}
+
+// ============================================================
+// ZONE 4: PROCUREMENT
+// ============================================================
+
+Table supplier_contract {
+  contract_id         uuid          [pk, default: `gen_random_uuid()`]
+  supplier_id         uuid          [not null, ref: > supplier.supplier_id]
+  item_id             uuid          [not null, ref: > item.item_id]
+  version             integer       [not null, default: 1]
+  unit_price          numeric(12,2) [not null]
+  discount_threshold  numeric(12,2)
+  discount_percentage numeric(5,2)
+  valid_from          date          [not null]
+  valid_to            date
+}
+
+Table purchase_order {
+  po_id              uuid          [pk, default: `gen_random_uuid()`]
+  supplier_id        uuid          [not null, ref: > supplier.supplier_id]
+  manager_id         uuid          [not null, ref: > manager.manager_id]
+  contract_id        uuid          [ref: > supplier_contract.contract_id]
+  status             varchar(50)   [not null, default: 'pending', note: 'pending | confirmed | shipped | received | cancelled']
+  total_cost         numeric(15,2) [not null]
+  digital_signature  text
+  estimated_arrival  date
+  generated_at       timestamp     [not null, default: `now()`]
+  confirmed_at       timestamp
+}
+
+Table po_line_item {
+  po_line_id        uuid          [pk, default: `gen_random_uuid()`]
+  po_id             uuid          [not null, ref: > purchase_order.po_id]
+  item_id           uuid          [not null, ref: > item.item_id]
+  quantity_ordered  integer       [not null]
+  quantity_received integer       [not null, default: 0]
+  unit_price        numeric(12,2) [not null]
+
+  indexes {
+    (po_id, item_id) [unique]
+  }
+}
+
+Table shipping_carrier {
+  carrier_id          uuid         [pk, default: `gen_random_uuid()`]
+  carrier_name        varchar(150) [not null]
+  delivery_speed_days integer
+  base_cost           numeric(10,2)
+  coverage_regions    text
+}
+
+Table shipment {
+  shipment_id       uuid        [pk, default: `gen_random_uuid()`]
+  po_id             uuid        [not null, ref: > purchase_order.po_id]
+  carrier_id        uuid        [not null, ref: > shipping_carrier.carrier_id]
+  tracking_number   varchar(100)
+  dispatch_date     date
+  estimated_arrival date
+  actual_arrival    date
+  state             varchar(50) [not null, default: 'pending', note: 'pending | in_transit | delivered | returned']
+}
+
+// ============================================================
+// ZONE 5: CUSTOMER ORDERS
+// ============================================================
+
+Table customer_order {
+  order_id         uuid          [pk, default: `gen_random_uuid()`]
+  customer_id      uuid          [not null, ref: > customer.customer_id]
+  picker_id        uuid          [ref: > picker.picker_id]
+  packer_id        uuid          [ref: > packer.packer_id]
+  carrier_id       uuid          [not null, ref: > shipping_carrier.carrier_id]
+  status           varchar(50)   [not null, default: 'pending', note: 'pending | picking | packing | shipped | delivered | cancelled']
+  total_amount     numeric(15,2) [not null]
+  shipping_address text          [not null]
+  urgency          varchar(20)   [not null, default: 'normal', note: 'low | normal | high | critical']
+  date             date          [not null, default: `current_date`]
+  created_at       timestamp     [not null, default: `now()`]
+  shipped_at       timestamp
+  delivered_at     timestamp
+}
+
+Table order_line_item {
+  order_line_id uuid          [pk, default: `gen_random_uuid()`]
+  order_id      uuid          [not null, ref: > customer_order.order_id]
+  item_id       uuid          [not null, ref: > item.item_id]
+  quantity      integer       [not null]
+  state         varchar(50)   [not null, default: 'pending', note: 'pending | picked | packed | shipped | cancelled']
+  unit_price    numeric(12,2) [not null]
+
+  indexes {
+    (order_id, item_id) [unique]
+  }
+}
+
+Table shipping_label {
+  label_id     uuid      [pk, default: `gen_random_uuid()`]
+  order_id     uuid      [not null, unique, ref: - customer_order.order_id]
+  carrier_id   uuid      [not null, ref: > shipping_carrier.carrier_id]
+  qr_code      text      [not null]
+  generated_at timestamp [not null, default: `now()`]
+  scanned_at   timestamp
+}
+
+Table backorder {
+  backorder_id    uuid      [pk, default: `gen_random_uuid()`]
+  order_line_id   uuid      [not null, unique, ref: - order_line_item.order_line_id]
+  item_id         uuid      [not null, ref: > item.item_id]
+  quantity_needed integer   [not null]
+  reason          text
+  status          varchar(50) [not null, default: 'open', note: 'open | in_progress | fulfilled | cancelled']
+  created_at      timestamp [not null, default: `now()`]
+  fulfilled_at    timestamp
+}
+
+// ============================================================
+// ZONE 6: PICKING
+// ============================================================
+
+Table pick_list {
+  picklist_id     uuid        [pk, default: `gen_random_uuid()`]
+  picker_id       uuid        [not null, ref: > picker.picker_id]
+  optimized_route text
+  batch_size      integer     [not null, default: 1]
+  status          varchar(50) [not null, default: 'pending', note: 'pending | in_progress | completed | cancelled']
+  created_at      timestamp   [not null, default: `now()`]
+  completed_at    timestamp
+}
+
+Table pick_list_item {
+  pl_item_id    uuid    [pk, default: `gen_random_uuid()`]
+  picklist_id   uuid    [not null, ref: > pick_list.picklist_id]
+  order_line_id uuid    [not null, ref: > order_line_item.order_line_id]
+  bin_id        uuid    [not null, ref: > bin.bin_id]
+  is_picked     boolean [not null, default: false]
+  picked_at     timestamp
+
+  indexes {
+    (picklist_id, order_line_id) [unique]
+  }
+}
+
+// ============================================================
+// ZONE 7: AUDIT & SYSTEM EVENTS
+// ============================================================
+
+Table audit_log {
+  log_id           uuid          [pk, default: `gen_random_uuid()`]
+  user_id          uuid          [ref: > user.user_id, note: 'nullable']
+  sensor_id        uuid          [ref: > iot_sensor.sensor_id, note: 'nullable']
+  event_type       varchar(100)  [not null]
+  event_detail     text
+  reason           text
+  discrepancy_rate numeric(5,2)
+  timestamp        timestamp     [not null, default: `now()`]
+}
+
+Table emergency_event {
+  event_id  uuid      [pk, default: `gen_random_uuid()`]
+  user_id   uuid      [not null, ref: > user.user_id]
+  reason    text      [not null]
+  timestamp timestamp [not null, default: `now()`]
+  resolved  boolean   [not null, default: false]
+}
+
+Table archived_order {
+  archive_id   uuid      [pk, default: `gen_random_uuid()`]
+  order_id     uuid      [not null, unique, ref: - customer_order.order_id]
+  archive_data jsonb     [not null]
+  archived_at  timestamp [not null, default: `now()`]
+}
