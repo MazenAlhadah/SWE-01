@@ -1,0 +1,15 @@
+/* Minor Bootstrap 5 overrides only — no custom colors, gradients, or animations */
+
+body {
+    font-size: 0.9rem;
+}
+
+/* Sidebar flush with viewport height */
+.list-group-item a {
+    display: block;
+    width: 100%;
+}
+
+.list-group-item a:hover {
+    text-decoration: underline;
+}
