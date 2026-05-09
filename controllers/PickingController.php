@@ -22,7 +22,7 @@ class PickingController {
 
     public function requestBatchPickList($pickerId) {
         $orderModel = new Order();
-        $batch = new BatchPichingSystem();
+        $batch = new BatchPickingSystem();
 
         $openOrders = $orderModel->getOrdersReadyForPicking();
         $pickList = $batch->requestPickList($openOrders);

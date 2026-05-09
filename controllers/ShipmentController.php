@@ -14,6 +14,7 @@ require_once __DIR__ . '/../models/Shipment.php';
 require_once __DIR__ . '/../models/Supplier.php';
 require_once __DIR__ . '/../services/LeadTimeEstimator.php';
 require_once __DIR__ . '/../services/CarrierSelectionService.php';
+require_once __DIR__ . '/../services/ReceivingStateMachine.php';
 require_once __DIR__ . '/../models/NotificationService.php';
 require_once __DIR__ . '/BackorderController.php';
 
@@ -112,13 +113,5 @@ class ShipmentController {
 
         header("Location: index.php?page=supplier&carrier_assigned=1&shipment_id={$shipmentId}&carrier_id={$carrierId}");
         exit();
-    }
-}
-
-class ReceivingStateMachine {
-
-    public function initReceivingStateMachine($shipmentId) {
-        $shipmentModel = new Shipment();
-        $shipmentModel->setShipmentState($shipmentId, 'EXPECTED');
     }
 }

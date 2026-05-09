@@ -1,5 +1,5 @@
 <?php
-class BatchPichingSystem {
+class BatchPickingSystem {
 
     public function requestPickList($orders) {
         $batch = $this->groupOrdersIntoBatch($orders);
