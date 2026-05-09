@@ -21,6 +21,9 @@
     <?php if (isset($_GET['error']) && $_GET['error'] === 'scan'): ?>
         <div class="alert alert-danger">Please scan or enter a valid item barcode.</div>
     <?php endif; ?>
+    <?php if (isset($_GET['error']) && $_GET['error'] === 'emergency'): ?>
+        <div class="alert alert-danger">Picking is paused because emergency mode is active.</div>
+    <?php endif; ?>
 
     <?php
     $route = $_SESSION['active_picklist_route'] ?? ($pickList['route'] ?? []);

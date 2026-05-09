@@ -76,6 +76,12 @@ class OrderController {
             exit();
         }
 
+        if (!$this->canRoleTransition($_SESSION['role'] ?? '', $currentState, $nextState)) {
+            $_SESSION['order_tracker_error'] = 'Your role cannot perform that transition.';
+            header("Location: index.php?page=orders&order_id={$orderId}");
+            exit();
+        }
+
         $updated = $sm->updateOrderState($orderId, $nextState);
         if (!$updated) {
             $_SESSION['order_tracker_error'] = 'Order state could not be updated.';
@@ -113,5 +119,22 @@ class OrderController {
     private function getOrderDetailsData($orderId) {
         $order = new Order();
         return $order->getOrderDetails($orderId);
+    }
+
+    private function canRoleTransition($role, $currentState, $nextState) {
+        if ($role === 'manager') {
+            return ($currentState === 'PACKING' && $nextState === 'SHIPPED')
+                || ($currentState === 'SHIPPED' && $nextState === 'DELIVERED');
+        }
+
+        if ($role === 'picker') {
+            return $currentState === 'PROCESSING' && $nextState === 'PICKING';
+        }
+
+        if ($role === 'packer') {
+            return $currentState === 'PICKING' && $nextState === 'PACKING';
+        }
+
+        return false;
     }
 }

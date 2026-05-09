@@ -260,6 +260,20 @@ class Order {
         $stmt->execute([$barcode]);
     }
 
+    public function markOrderLinePicked($orderLineId) {
+        if (!$this->hasTable('ORDER_LINE_ITEM')) {
+            return false;
+        }
+
+        $stmt = $this->conn->prepare(
+            "UPDATE ORDER_LINE_ITEM
+             SET state = 'PICKING'
+             WHERE order_line_id = ?"
+        );
+        $stmt->execute([$orderLineId]);
+        return $stmt->rowCount() > 0;
+    }
+
     public function assignPacker($orderId, $packerId) {
         if (!$this->hasTable('CUSTOMER_ORDER') || !$this->hasColumn('CUSTOMER_ORDER', 'packer_id')) {
             return;

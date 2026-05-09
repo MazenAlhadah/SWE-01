@@ -128,6 +128,11 @@ class ProcurementController implements StockObserver {
     }
 
     public function approvePO() {
+        if (($_SESSION['role'] ?? '') !== 'manager') {
+            http_response_code(403);
+            die("Access denied.");
+        }
+
         $poId = $_POST['po_id'] ?? 0;
         if ($poId) {
             $poModel = new PurchaseOrder();

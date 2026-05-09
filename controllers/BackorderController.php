@@ -15,6 +15,19 @@ require_once __DIR__ . '/../models/NotificationService.php';
 class BackorderController {
 
     public function triggerBackorderCheck($shipmentId) {
+        $shipmentModel = new Shipment();
+        $shipment = $shipmentModel->getShipmentById($shipmentId);
+        $state = $shipment['state'] ?? '';
+
+        if ($state !== 'AT_DOCK' && $state !== 'STORED') {
+            return [
+                'hasBackorders' => false,
+                'processed' => 0,
+                'items' => [],
+                'deferred' => true
+            ];
+        }
+
         $backorderedItems = $this->detectBackorderedItemsInShipment($shipmentId);
         if (empty($backorderedItems)) {
             return [
@@ -24,7 +37,6 @@ class BackorderController {
             ];
         }
 
-        $shipmentModel = new Shipment();
         $backorders = $shipmentModel->fetchOpenBackorders($backorderedItems);
         if (empty($backorders)) {
             return [

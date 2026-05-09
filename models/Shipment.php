@@ -77,18 +77,6 @@ class Shipment {
             $shipmentId = (int)$this->conn->lastInsertId();
         }
 
-        if (!empty($items)) {
-            $stmtLine = $this->conn->prepare(
-                "UPDATE PO_LINE_ITEM
-                 SET quantity_received = ?
-                 WHERE po_id = ? AND item_id = ?"
-            );
-
-            foreach ($items as $itemId => $qty) {
-                $stmtLine->execute([(int)$qty, $poId, (int)$itemId]);
-            }
-        }
-
         return $shipmentId;
     }
 
@@ -201,6 +189,19 @@ class Shipment {
         $stmt->execute([$shipmentId]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ? (int)$row['order_id'] : 0;
+    }
+
+    public function fetchSupplierIdForShipment($shipmentId) {
+        $stmt = $this->conn->prepare(
+            "SELECT po.supplier_id
+             FROM SHIPMENT sh
+             JOIN PURCHASE_ORDER po ON po.po_id = sh.po_id
+             WHERE sh.shipment_id = ?
+             LIMIT 1"
+        );
+        $stmt->execute([$shipmentId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ? (int)$row['supplier_id'] : 0;
     }
 
     public function detectBackorderedItemsInShipment($shipmentId) {

@@ -89,6 +89,46 @@ class PickList {
         $stmt->execute([$picklistId]);
     }
 
+    public function findOpenPickListByPicker($pickerId) {
+        if (!$this->hasTable('PICK_LIST')) {
+            return [];
+        }
+
+        $stmt = $this->conn->prepare(
+            "SELECT picklist_id, optimized_route, batch_size, status, created_at, completed_at
+             FROM PICK_LIST
+             WHERE picker_id = ?
+               AND status IN ('ACTIVE', 'PAUSED')
+             ORDER BY created_at DESC
+             LIMIT 1"
+        );
+        $stmt->execute([$pickerId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ? $row : [];
+    }
+
+    public function getPickListItems($picklistId) {
+        if (!$this->hasTable('PICK_LIST_ITEM')) {
+            return [];
+        }
+
+        $stmt = $this->conn->prepare(
+            "SELECT pli.pl_item_id, pli.picklist_id, pli.order_line_id, pli.bin_id, pli.is_picked, pli.picked_at,
+                    oli.order_id, oli.item_id, oli.quantity,
+                    it.sku, it.name,
+                    b.location_code, z.zone_name
+             FROM PICK_LIST_ITEM pli
+             JOIN ORDER_LINE_ITEM oli ON oli.order_line_id = pli.order_line_id
+             JOIN ITEM it ON it.item_id = oli.item_id
+             LEFT JOIN BIN b ON b.bin_id = pli.bin_id
+             LEFT JOIN WAREHOUSE_ZONE z ON z.zone_id = b.zone_id
+             WHERE pli.picklist_id = ?
+             ORDER BY pli.pl_item_id ASC"
+        );
+        $stmt->execute([$picklistId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     private function hasTable($table) {
         $stmt = $this->conn->prepare("SHOW TABLES LIKE ?");
         $stmt->execute([$table]);

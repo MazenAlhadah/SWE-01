@@ -108,8 +108,18 @@ class ShipmentController {
             exit();
         }
 
+        $supplierModel = new Supplier();
+        $supplier = $supplierModel->findByUserId($_SESSION['user_id']);
+        $shipmentModel = new Shipment();
+        $shipmentSupplierId = $shipmentModel->fetchSupplierIdForShipment($shipmentId);
+
+        if (!$supplier || !$shipmentSupplierId || (int)$supplier['supplier_id'] !== $shipmentSupplierId) {
+            http_response_code(403);
+            die("Access denied.");
+        }
+
         $carrierService = new CarrierSelectionService();
-        $carrierResult = $carrierService->assignCarrier($shipmentId, $carrierId);
+        $carrierService->assignCarrier($shipmentId, $carrierId);
 
         header("Location: index.php?page=supplier&carrier_assigned=1&shipment_id={$shipmentId}&carrier_id={$carrierId}");
         exit();
