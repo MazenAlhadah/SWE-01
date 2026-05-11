@@ -78,21 +78,55 @@
         </div>
     <?php endif; ?>
 
-    <?php if (!empty($recommendedCarrier)): ?>
+    <?php if (!empty($availableCarriers)): ?>
         <div class="card mb-4">
             <div class="card-header bg-warning">
-                <strong>Recommended Carrier</strong>
+                <strong>Carrier Selection</strong>
             </div>
             <div class="card-body">
-                <p><strong>Name:</strong> <?= htmlspecialchars($recommendedCarrier['name']) ?></p>
-                <p><strong>Estimated Delivery:</strong> <?= htmlspecialchars($recommendedCarrier['estimatedDelivery']) ?></p>
-                <p><strong>Cost:</strong> $<?= number_format($recommendedCarrier['cost'], 2) ?></p>
+                <?php if (!empty($recommendedCarrier)): ?>
+                    <div class="alert alert-info">
+                        Recommended carrier: <strong><?= htmlspecialchars($recommendedCarrier['name']) ?></strong>
+                        for <?= htmlspecialchars($recommendedCarrier['estimatedDelivery']) ?>
+                        at $<?= number_format($recommendedCarrier['cost'], 2) ?>.
+                    </div>
+                <?php endif; ?>
 
-                <form method="POST" action="index.php?page=supplier&action=confirmCarrier">
-                    <input type="hidden" name="shipment_id" value="<?= (int)$recommendedCarrier['shipmentId'] ?>">
-                    <input type="hidden" name="carrier_id" value="<?= (int)$recommendedCarrier['carrierId'] ?>">
-                    <button type="submit" class="btn btn-primary">Confirm Carrier</button>
-                </form>
+                <p class="mb-3">Available carriers are loaded from the `SHIPPING_CARRIER` table.</p>
+
+                <table class="table table-bordered table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Carrier</th>
+                            <th>Delivery Speed</th>
+                            <th>Base Cost</th>
+                            <th>Coverage Regions</th>
+                            <th>Recommendation</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($availableCarriers as $carrier): ?>
+                            <?php $isRecommended = !empty($recommendedCarrier) && (int)$recommendedCarrier['carrierId'] === (int)$carrier['carrier_id']; ?>
+                            <tr class="<?= $isRecommended ? 'table-warning' : '' ?>">
+                                <td><?= htmlspecialchars($carrier['carrier_name']) ?></td>
+                                <td><?= (int)$carrier['delivery_speed_days'] ?> day(s)</td>
+                                <td>$<?= number_format($carrier['base_cost'], 2) ?></td>
+                                <td><?= htmlspecialchars($carrier['coverage_regions'] ?: 'All regions') ?></td>
+                                <td><?= $isRecommended ? 'Recommended' : 'Available' ?></td>
+                                <td>
+                                    <form method="POST" action="index.php?page=supplier&action=confirmCarrier" class="d-inline">
+                                        <input type="hidden" name="shipment_id" value="<?= (int)$shipment['shipment_id'] ?>">
+                                        <input type="hidden" name="carrier_id" value="<?= (int)$carrier['carrier_id'] ?>">
+                                        <button type="submit" class="btn btn-sm <?= $isRecommended ? 'btn-primary' : 'btn-outline-primary' ?>">
+                                            Select Carrier
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
             </div>
         </div>
     <?php endif; ?>

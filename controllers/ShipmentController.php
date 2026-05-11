@@ -20,6 +20,19 @@ require_once __DIR__ . '/BackorderController.php';
 
 class ShipmentController {
 
+    private function buildCarrierSelectionData($shipmentId) {
+        $carrierService = new CarrierSelectionService();
+        $recommendedCarrier = null;
+        $availableCarriers = [];
+
+        if (!$this->checkCarrierAssignment($shipmentId)) {
+            $recommendedCarrier = $carrierService->initiateCarrierSelection($shipmentId, 0);
+            $availableCarriers = $carrierService->fetchAvailableCarriers();
+        }
+
+        return [$recommendedCarrier, $availableCarriers];
+    }
+
     public function fetchConfirmedPO($poId) {
         $poModel = new PurchaseOrder();
         $po = $poModel->getPO($poId);
@@ -30,12 +43,14 @@ class ShipmentController {
             $error = 'Only confirmed purchase orders can be dispatched.';
             $shipment = null;
             $recommendedCarrier = null;
+            $availableCarriers = [];
             require_once __DIR__ . '/../views/supplier/shipment.php';
             return;
         }
 
         $shipment = null;
         $recommendedCarrier = null;
+        $availableCarriers = [];
         require_once __DIR__ . '/../views/supplier/shipment.php';
     }
 
@@ -61,10 +76,7 @@ class ShipmentController {
         $ns = NotificationService::getInstance();
         $ns->notifyManagerAsync($estimatedArrivalDate, $shipmentId);
 
-        $recommendedCarrier = null;
-        if (!$this->checkCarrierAssignment($shipmentId)) {
-            $recommendedCarrier = $this->triggerCarrierSelection($shipmentId);
-        }
+        list($recommendedCarrier, $availableCarriers) = $this->buildCarrierSelectionData($shipmentId);
 
         $backorderSummary = $this->triggerBackorderCheck($shipmentId);
         $shipment = $shipmentModel->getShipmentById($shipmentId);
@@ -93,6 +105,11 @@ class ShipmentController {
     public function triggerCarrierSelection($shipmentId) {
         $carrierService = new CarrierSelectionService();
         return $carrierService->initiateCarrierSelection($shipmentId, 0);
+    }
+
+    public function fetchAvailableCarriers() {
+        $carrierService = new CarrierSelectionService();
+        return $carrierService->fetchAvailableCarriers();
     }
 
     public function triggerBackorderCheck($shipmentId) {
