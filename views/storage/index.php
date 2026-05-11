@@ -10,6 +10,14 @@
     <?php if (!empty($success)): ?>
         <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
     <?php endif; ?>
+    <?php if (isset($_GET['approved'])): ?>
+        <?php $approvedCount = (int)$_GET['approved']; ?>
+        <div class="alert alert-success">
+            <?= $approvedCount > 0
+                ? "Approved {$approvedCount} zone suggestion(s). Cleared them from the pending list."
+                : 'No pending suggestions were approved.' ?>
+        </div>
+    <?php endif; ?>
     <?php if (isset($_GET['updated'])): ?>
         <div class="alert alert-success">Zone assignment updated.</div>
     <?php endif; ?>
@@ -50,7 +58,7 @@
     <!-- UC-02: Optimizer suggestions table -->
     <h5>Optimizer Suggestions</h5>
     <?php if (empty($suggestions)): ?>
-        <p class="text-muted">No items in catalog.</p>
+        <div class="alert alert-info mb-3">No pending optimizer suggestions. Current assignments already match the suggested zones.</div>
     <?php else: ?>
         <table class="table table-bordered table-sm mb-2">
             <thead class="table-light">

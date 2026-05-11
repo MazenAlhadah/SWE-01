@@ -40,6 +40,11 @@ class StorageController {
         }
         unset($suggestion);
 
+        /* Only show suggestions that still need action */
+        $suggestions = array_values(array_filter($suggestions, function ($suggestion) {
+            return (int)($suggestion['current_zone_id'] ?? 0) !== (int)$suggestion['zone_id'];
+        }));
+
         /* opt: check for backorders to cross-dock */
         $incoming_items = $model->fetchIncomingShipmentItems();
         $cross_dock   = [];
@@ -57,21 +62,25 @@ class StorageController {
     public function approve() {
         $suggestions = $_POST['suggestions'] ?? [];
         $model = new Item();
+        $updatedCount = 0;
 
         foreach ($suggestions as $item_id => $zone_id) {
             $model->updateZoneAssignment((int)$item_id, (int)$zone_id);
+            $updatedCount++;
         }
 
-        /* Log to AUDIT_LOG (append-only) */
-        $conn = Database::getInstance()->getConnection();
-        $stmt = $conn->prepare(
-            "INSERT INTO AUDIT_LOG (user_id, sensor_id, event_type, event_detail, reason, discrepancy_rate, timestamp)
-             VALUES (?, NULL, 'ZONE_ASSIGNMENT', 'Bulk zone assignments approved', 'Manager approved optimizer suggestions', 0, NOW())"
-        );
-        $stmt->execute([$_SESSION['user_id']]);
+        if ($updatedCount > 0) {
+            /* Log to AUDIT_LOG (append-only) */
+            $conn = Database::getInstance()->getConnection();
+            $stmt = $conn->prepare(
+                "INSERT INTO AUDIT_LOG (user_id, sensor_id, event_type, event_detail, reason, discrepancy_rate, timestamp)
+                 VALUES (?, NULL, 'ZONE_ASSIGNMENT', 'Bulk zone assignments approved', 'Manager approved optimizer suggestions', 0, NOW())"
+            );
+            $stmt->execute([$_SESSION['user_id']]);
+        }
 
-        $success = 'Zone assignments updated.';
-        $this->index();
+        header("Location: index.php?page=storage&approved={$updatedCount}");
+        exit();
     }
 
     /* UC-02 alt: manager overrides a single item location */
