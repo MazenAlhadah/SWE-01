@@ -1,0 +1,251 @@
+@startuml object_diagrams_v3
+skinparam monochrome true
+skinparam packageStyle rectangle
+skinparam objectAttributeFontSize 11
+skinparam objectFontSize 12
+
+' ============================================================
+' Staff & Role Assignment
+' ============================================================
+package "Staff & Role Assignment" {
+
+  object "alice : WarehouseManager" as alice {
+    staffId     = 101
+    email       = "alice@warehouse.com"
+    department  = "Operations"
+    accessLevel = 5
+  }
+
+  object "adminRole : Role" as adminRole {
+    roleId   = 1
+    roleName = "Admin"
+  }
+
+  object "bob : Picker" as bob1 {
+    staffId  = 102
+    email    = "bob@warehouse.com"
+    pickZone = "Zone A"
+  }
+
+  object "charlie : Packer" as charlie1 {
+    staffId     = 103
+    email       = "charlie@warehouse.com"
+    packStation = "Station 1"
+  }
+
+  alice   --> adminRole  : manages
+  alice   --> bob1       : manages
+  alice   --> charlie1   : manages
+}
+
+' ============================================================
+' Cold Zone Inventory
+' ============================================================
+package "Cold Zone Inventory" {
+
+  object "mainFacility : Warehouse" as mainFacility {
+    warehouseId   = 1
+    location      = "Building A"
+    capacity      = 50000
+    occupancyRate = 4.5
+  }
+
+  object "coldZone : Zone" as coldZone {
+    zoneId      = "Z-Cold"
+    zoneType    = "Refrigerated"
+    temperature = -4.0
+    humidity    = 40.0
+  }
+
+  object "frozenMeatInv : Inventory" as frozenMeatInv {
+    inventoryId  = 55
+    quantity     = 200
+    reservedQty  = 150
+    safetyStock  = 50
+  }
+
+  object "beefPatty : Item" as beefPatty {
+    itemId     = 998
+    name       = "Beef Patty Box"
+    sku        = "BP-100"
+    weight     = 50.0
+    expiryDate = "2026-12-01"
+  }
+
+  mainFacility  *--> coldZone      : contains
+  coldZone       --> beefPatty     : stores
+  (coldZone, beefPatty) .. frozenMeatInv
+}
+
+' ============================================================
+' Purchase Order to Supplier
+' ============================================================
+package "Purchase Order to Supplier" {
+
+  object "techCorp : Supplier" as techCorp {
+    supplierId  = 201
+    companyName = "TechCorp"
+    contactInfo = "sales@techcorp.com"
+  }
+
+  object "contract2026 : SupplierContract" as contract2026 {
+    contractId        = 5001
+    version           = 2
+    discountThreshold = 10.5
+  }
+
+  object "po1044 : PurchaseOrder" as po1044 {
+    poId             = 1044
+    supplierId       = 201
+    digitalSignature = "0xABC123"
+    estimatedArrival = "2026-04-20"
+  }
+
+  object "scanner : Item" as scanner {
+    itemId = 801
+    name   = "Barcode Scanner"
+    sku    = "BS-X1"
+  }
+
+  techCorp    --> contract2026 : holds
+  techCorp    --> po1044       : generates
+  po1044      o--> scanner    : orders
+}
+
+' ============================================================
+' Pick List Generation
+' ============================================================
+package "Pick List Generation" {
+
+  object "order992a : Order" as order992a {
+    orderId     = 992
+    status      = PROCESSING
+    totalAmount = 250.00
+  }
+
+  object "pickList77 : PickList" as pickList77 {
+    pickListId     = 77
+    optimizedRoute = "A1 -> B2 -> C1"
+    status         = "Active"
+  }
+
+  object "bob2 : Picker" as bob2 {
+    staffId  = 102
+    pickZone = "Zone A"
+  }
+
+  object "zoneA : Zone" as zoneA {
+    zoneId   = "Z-A"
+    zoneType = "Dry Goods"
+  }
+
+  order992a  --> pickList77 : generates
+  pickList77 --> bob2       : assignedTo
+  bob2       --> zoneA      : worksIn
+}
+
+' ============================================================
+' Packing & Shipment
+' ============================================================
+package "Packing & Shipment" {
+
+  object "order992b : Order" as order992b {
+    orderId = 992
+    status  = PACKING
+  }
+
+  object "charlie2 : Packer" as charlie2 {
+    staffId     = 103
+    packStation = "Station 1"
+  }
+
+  object "shipment404 : Shipment" as shipment404 {
+    shipmentId     = 404
+    status         = "Ready"
+    trackingNumber = "1Z9999"
+  }
+
+  object "fedEx : Carrier" as fedEx {
+    carrierId = 88
+    name      = "FedEx Express"
+  }
+
+  charlie2    --> order992b   : packedBy
+  charlie2    --> shipment404 : creates
+  shipment404 --> fedEx       : assignedTo
+}
+
+' ============================================================
+' IoT Temperature Alert
+' ============================================================
+package "IoT Temperature Alert" {
+
+  object "coldZone2 : Zone" as coldZone2 {
+    zoneId      = "Z-Cold"
+    temperature = 5.0
+  }
+
+  object "tempSensor1 : IoTSensor" as tempSensor1 {
+    sensorId    = 301
+    type        = "Temperature"
+    lastReading = 5.0
+    nextMaint   = "2026-06-01"
+  }
+
+  object "tempSpike : EmergencyEvent" as tempSpike {
+    eventId   = 911
+    severity  = "HIGH"
+    timestamp = "2026-04-14T13:40:00Z"
+    resolved  = false
+  }
+
+  object "alert99 : Alert" as alert99 {
+    alertId   = 99
+    message   = "CRITICAL: Zone Z-Cold Temp above threshold!"
+    resolved  = false
+  }
+
+  object "alice2 : WarehouseManager" as alice2 {
+    staffId     = 101
+    department  = "Operations"
+    accessLevel = 5
+  }
+
+  tempSensor1 --> coldZone2  : monitors
+  tempSensor1 --> tempSpike  : triggers
+  tempSpike   --> alert99    : creates
+  alert99     --> alice2     : notifies
+}
+
+' ============================================================
+' SCENARIO 7 – Monthly Audit & Back-Order
+' ============================================================
+package "Monthly Audit & Back-Order" {
+
+  object "monthlyAudit : Audit" as monthlyAudit {
+    auditId        = 701
+    date           = "2026-04-01"
+    discrepancyRate = 0.02
+  }
+
+  object "widgetInv : Inventory" as widgetInv {
+    inventoryId = 42
+    quantity    = 0
+  }
+
+  object "missingWidget : BackOrder" as missingWidget {
+    backOrderId = 551
+    reason      = "Audit Discrepancy"
+  }
+
+  object "rushPO : PurchaseOrder" as rushPO {
+    poId   = 1045
+    status = EXPECTED
+  }
+
+  monthlyAudit --> widgetInv    : checks
+  widgetInv    --> missingWidget : triggers
+  missingWidget --> rushPO      : creates
+}
+
+@enduml
