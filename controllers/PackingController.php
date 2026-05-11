@@ -18,7 +18,12 @@ require_once __DIR__ . '/../services/LabelService.php';
 class PackingController {
 
     public function index() {
-        $this->requestPackingQueue($this->resolvePackerId());
+        $packerId = $this->resolvePackerId();
+        if ($packerId === null) {
+            $_SESSION['packing_error'] = 'This user is not linked to a PACKER record yet.';
+            $packerId = 0;
+        }
+        $this->requestPackingQueue($packerId);
     }
 
     public function requestPackingQueue($packerId) {
@@ -59,6 +64,11 @@ class PackingController {
         }
 
         $packerId = $this->resolvePackerId();
+        if ($packerId === null) {
+            $_SESSION['packing_error'] = 'This user is not linked to a PACKER record yet.';
+            header("Location: index.php?page=packing");
+            exit();
+        }
         $orderModel = new Order();
         $sort = new SortToLight();
 
@@ -209,9 +219,6 @@ class PackingController {
 
     private function resolvePackerId() {
         $order = new Order();
-        if (method_exists($order, 'assignPacker')) {
-            return (int)$_SESSION['user_id'];
-        }
-        return (int)$_SESSION['user_id'];
+        return $order->resolvePackerId((int)$_SESSION['user_id']);
     }
 }

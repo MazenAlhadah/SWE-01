@@ -28,6 +28,18 @@ class StorageController {
         $zones    = $model->fetchZoneData();
         $suggestions = $optimizer->runSmartZonalOptimizer($items, $zones);
 
+        $itemsById = [];
+        foreach ($items as $item) {
+            $itemsById[$item['item_id']] = $item;
+        }
+
+        foreach ($suggestions as &$suggestion) {
+            $current = $itemsById[$suggestion['item_id']] ?? [];
+            $suggestion['current_zone_id'] = $current['current_zone_id'] ?? null;
+            $suggestion['current_zone_name'] = $current['current_zone_name'] ?? 'Unassigned';
+        }
+        unset($suggestion);
+
         /* opt: check for backorders to cross-dock */
         $incoming_items = $model->fetchIncomingShipmentItems();
         $cross_dock   = [];

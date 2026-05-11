@@ -64,7 +64,7 @@ class Order {
         if ($this->hasColumn('CUSTOMER_ORDER', 'packer_id')) {
             $sql .= " OR (co.status = 'PACKING' AND (co.packer_id IS NULL";
             if ($packerId !== null) {
-                $sql .= " OR co.packer_id = ?)";
+                $sql .= " OR co.packer_id = ?))";
                 $params[] = $packerId;
             } else {
                 $sql .= "))";
@@ -397,6 +397,28 @@ class Order {
         );
         $stmt->execute([$orderId, $archiveData]);
         return true;
+    }
+
+    public function resolvePackerId($userId) {
+        if (!$this->hasTable('PACKER')) {
+            return (int)$userId;
+        }
+
+        if (!$this->hasColumn('PACKER', 'user_id')) {
+            return null;
+        }
+
+        $stmt = $this->conn->prepare(
+            "SELECT packer_id FROM PACKER WHERE user_id = ? LIMIT 1"
+        );
+        $stmt->execute([$userId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row || !isset($row['packer_id'])) {
+            return null;
+        }
+
+        return $row['packer_id'];
     }
 
     public function removeFromActiveDB($orderId) {

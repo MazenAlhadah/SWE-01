@@ -12,9 +12,13 @@ class Item {
     /* UC-02: full item catalog for zonal optimizer */
     public function fetchItemCatalog() {
         $stmt = $this->conn->prepare(
-            "SELECT item_id, sku, name, weight, expiry_date, unit_price, sales_velocity,
-                    is_sensitive, safety_stock_qty, height_cm, width_cm, depth_cm
-             FROM ITEM
+            "SELECT it.item_id, it.sku, it.name, it.weight, it.expiry_date, it.unit_price, it.sales_velocity,
+                    it.is_sensitive, it.safety_stock_qty, it.height_cm, it.width_cm, it.depth_cm,
+                    b.zone_id AS current_zone_id, z.zone_name AS current_zone_name
+             FROM ITEM it
+             LEFT JOIN INVENTORY i ON i.item_id = it.item_id
+             LEFT JOIN BIN b ON b.bin_id = i.bin_id
+             LEFT JOIN WAREHOUSE_ZONE z ON z.zone_id = b.zone_id
              ORDER BY sales_velocity DESC"
         );
         $stmt->execute();

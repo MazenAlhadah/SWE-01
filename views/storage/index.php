@@ -58,6 +58,7 @@
                     <th>SKU</th>
                     <th>Name</th>
                     <th>Velocity</th>
+                    <th>Current Zone</th>
                     <th>Suggested Zone</th>
                     <th>Override Zone</th>
                 </tr>
@@ -68,6 +69,7 @@
                     <td><?= htmlspecialchars($s['sku']) ?></td>
                     <td><?= htmlspecialchars($s['name']) ?></td>
                     <td><?= number_format($s['velocity'], 1) ?></td>
+                    <td><?= htmlspecialchars($s['current_zone_name'] ?? 'Unassigned') ?></td>
                     <td><?= htmlspecialchars($s['zone_name']) ?></td>
                     <td>
                         <form method="POST" action="index.php?page=storage&action=override"
@@ -77,7 +79,7 @@
                                     style="width:auto">
                                 <?php foreach ($zones as $z): ?>
                                     <option value="<?= (int)$z['zone_id'] ?>"
-                                        <?= $z['zone_id'] == $s['zone_id'] ? 'selected' : '' ?>>
+                                        <?= $z['zone_id'] == ($s['current_zone_id'] ?? $s['zone_id']) ? 'selected' : '' ?>>
                                         <?= htmlspecialchars($z['zone_name']) ?>
                                     </option>
                                 <?php endforeach; ?>
