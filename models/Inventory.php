@@ -25,6 +25,19 @@ class Inventory {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /* UC-05: fetch only SKUs below safety stock for reorder handling */
+    public function fetchAffectedSKUs() {
+        $stmt = $this->conn->prepare(
+            "SELECT it.sku
+             FROM INVENTORY i
+             JOIN ITEM it ON it.item_id = i.item_id
+             WHERE i.quantity_available < it.safety_stock_qty
+             ORDER BY it.sku"
+        );
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
+
     /* UC-01 / UC-06: total occupancy ratio across all zones */
     public function fetchTotalOccupancy() {
         $stmt = $this->conn->prepare(

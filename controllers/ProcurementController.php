@@ -47,17 +47,10 @@ class ProcurementController implements StockObserver {
     public function monitorStockLevels() {
         $inv = new Inventory();
         $stockData = $inv->fetchStockLevels();
-        
+        $affectedSKUs = $inv->fetchAffectedSKUs();
         $breached = $this->checkSafetyStockThreshold($stockData);
-        $affectedSKUs = [];
-        
+
         if ($breached) {
-            foreach ($stockData as $item) {
-                if ($item['quantity_available'] < $item['safety_stock_qty']) {
-                    $affectedSKUs[] = $item['sku'];
-                }
-            }
-            
             // Trigger Observer Notification manually just for demonstration
             $monitor = InventoryMonitor::getInstance();
             if ($monitor->stockBelowSafety()) {
@@ -231,26 +224,13 @@ class ProcurementController implements StockObserver {
     public function notifyPOConfirmed($poId) {
         // Called when supplier confirms
         $poModel = new PurchaseOrder();
-        // Log confirmation
-        $conn = Database::getInstance()->getConnection();
-        $stmt = $conn->prepare(
-            "INSERT INTO AUDIT_LOG (user_id, sensor_id, event_type, event_detail, reason, discrepancy_rate, timestamp)
-             VALUES (NULL, NULL, 'PO_CONFIRMED', ?, 'Supplier confirmed purchase order', 0, NOW())"
-        );
-        $stmt->execute(["Supplier confirmed PO $poId"]);
+        $poModel->logConfirmation($poId);
         $_SESSION['notifications'][] = "Supplier confirmed PO $poId";
     }
 
     public function notifyManagerModificationRequested($poId, $details) {
-        $conn = Database::getInstance()->getConnection();
-        $stmt = $conn->prepare(
-            "INSERT INTO AUDIT_LOG (user_id, sensor_id, event_type, event_detail, reason, discrepancy_rate, timestamp)
-             VALUES (NULL, NULL, 'PO_MODIFIED', ?, ?, 0, NOW())"
-        );
-        $stmt->execute([
-            "Supplier requested modification for PO $poId",
-            empty($details) ? 'Modification requested' : $details
-        ]);
+        $poModel = new PurchaseOrder();
+        $poModel->logModificationRequest($poId, $details);
         $_SESSION['notifications'][] = "Supplier requested modification for PO $poId";
     }
 }

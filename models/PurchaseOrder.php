@@ -94,6 +94,25 @@ class PurchaseOrder {
         $stmt->execute([$status, $poId]);
     }
 
+    public function logConfirmation($poId) {
+        $stmt = $this->conn->prepare(
+            "INSERT INTO AUDIT_LOG (user_id, sensor_id, event_type, event_detail, reason, discrepancy_rate, timestamp)
+             VALUES (NULL, NULL, 'PO_CONFIRMED', ?, 'Supplier confirmed purchase order', 0, NOW())"
+        );
+        $stmt->execute(["Supplier confirmed PO $poId"]);
+    }
+
+    public function logModificationRequest($poId, $details) {
+        $stmt = $this->conn->prepare(
+            "INSERT INTO AUDIT_LOG (user_id, sensor_id, event_type, event_detail, reason, discrepancy_rate, timestamp)
+             VALUES (NULL, NULL, 'PO_MODIFIED', ?, ?, 0, NOW())"
+        );
+        $stmt->execute([
+            "Supplier requested modification for PO $poId",
+            empty($details) ? 'Modification requested' : $details
+        ]);
+    }
+
     public function getPOsBySupplier($supplierId) {
         $stmt = $this->conn->prepare(
             "SELECT po_id, status, total_cost, generated_at 

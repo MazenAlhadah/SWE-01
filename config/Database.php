@@ -4,7 +4,7 @@ class Database {
     private $conn;
 
     private function __construct() {
-        $this->conn = new PDO("mysql:host=localhost;dbname=warehouse_db;charset=utf8", "root", "");
+        $this->conn = new PDO("mysql:host=localhost;dbname=warehouse_db;charset=utf8", "warehouse_user", "warehouse123");
         $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     }
 
