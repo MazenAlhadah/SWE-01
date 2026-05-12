@@ -90,10 +90,10 @@ class PackingController {
 
     public function placeItemInBin() {
         $orderId = (int)($_SESSION['active_packing_order_id'] ?? 0);
-        $itemId = (int)($_POST['item_id'] ?? 0);
+        $orderLineId = (int)($_POST['order_line_id'] ?? 0);
         $binId = trim($_POST['bin_id'] ?? '');
 
-        if (!$orderId || !$itemId || $binId === '') {
+        if (!$orderId || !$orderLineId || $binId === '') {
             $_SESSION['packing_error'] = 'Item placement needs an active order, item, and target bin.';
             header("Location: index.php?page=packing");
             exit();
@@ -101,7 +101,7 @@ class PackingController {
 
         $sort = new SortToLight();
         $assignments = $_SESSION['packing_sort_guidance'] ?? $sort->initSortToLight($orderId);
-        $valid = $sort->confirmPlacement($assignments, $itemId, $binId);
+        $valid = $sort->confirmPlacement($assignments, $orderLineId, $binId);
 
         if (!$valid) {
             $_SESSION['packing_error'] = 'The scanned item does not match that packing bin assignment.';
@@ -110,9 +110,9 @@ class PackingController {
         }
 
         $confirmed = $_SESSION['packing_confirmed_bins'] ?? [];
-        $confirmed[$itemId] = $binId;
+        $confirmed[$orderLineId] = $binId;
         $_SESSION['packing_confirmed_bins'] = $confirmed;
-        $_SESSION['packing_success'] = "Item {$itemId} placed in {$binId}.";
+        $_SESSION['packing_success'] = "Order line {$orderLineId} placed in {$binId}.";
 
         header("Location: index.php?page=packing");
         exit();
@@ -126,6 +126,16 @@ class PackingController {
             $_SESSION['packing_error'] = 'Select an order before confirming packing.';
             header("Location: index.php?page=packing");
             exit();
+        }
+
+        $assignments = $_SESSION['packing_sort_guidance'] ?? [];
+        $confirmed = $_SESSION['packing_confirmed_bins'] ?? [];
+        foreach ($assignments as $row) {
+            if (empty($confirmed[$row['order_line_id']])) {
+                $_SESSION['packing_error'] = 'All items must be assigned to their sort-to-light bins before weight validation.';
+                header("Location: index.php?page=packing");
+                exit();
+            }
         }
 
         $validator = new ParcelValidator();
@@ -201,14 +211,14 @@ class PackingController {
 
         $label = new LabelService();
         if (!$label->confirmLabelAttached($orderId, $qrCode)) {
-            $_SESSION['packing_error'] = 'Scanned label does not match the active order.';
+            $_SESSION['packing_error'] = $label->getLastError() ?: 'Wrong label, reprint required';
             header("Location: index.php?page=packing");
             exit();
         }
 
         $sm = new FulfillmentStateMachine();
         $currentState = $sm->fetchOrderState($orderId);
-        $validation = $sm->validateTransition($currentState, 'SHIPPED');
+        $validation = $sm->validateTransition($currentState, 'PACKING');
 
         if (!$validation['valid']) {
             $_SESSION['packing_error'] = $validation['reason'];
@@ -216,13 +226,13 @@ class PackingController {
             exit();
         }
 
-        if (!$sm->updateOrderState($orderId, 'SHIPPED')) {
-            $_SESSION['packing_error'] = 'Order could not be moved to SHIPPED after label confirmation.';
+        if (!$sm->updateOrderState($orderId, 'PACKING')) {
+            $_SESSION['packing_error'] = 'Order could not be moved to PACKING after label confirmation.';
             header("Location: index.php?page=packing");
             exit();
         }
 
-        NotificationService::getInstance()->update("Order {$orderId} has shipped and is in transit.");
+        NotificationService::getInstance()->update("Order {$orderId} packed and labeled successfully.");
 
         $_SESSION['packing_success'] = "Order {$orderId} packed and labeled successfully.";
         unset(

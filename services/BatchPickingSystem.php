@@ -29,20 +29,31 @@ class BatchPickingSystem {
     public function computeOptimalRoute($orders) {
         $bins = [];
         foreach ($orders as $row) {
-            $code = $row['location_code'] ?: 'Unassigned Bin';
-            if (!in_array($code, $bins)) {
-                $bins[] = $code;
+            $key = (string)($row['bin_id'] ?? '') . '|' . (string)($row['location_code'] ?: 'Unassigned Bin');
+            if (!isset($bins[$key])) {
+                $bins[$key] = [
+                    'bin_id' => isset($row['bin_id']) ? (int)$row['bin_id'] : PHP_INT_MAX,
+                    'location_code' => $row['location_code'] ?: 'Unassigned Bin'
+                ];
             }
         }
-        sort($bins);
-        return $bins;
+
+        uasort($bins, function($a, $b) {
+            $binCmp = $a['bin_id'] <=> $b['bin_id'];
+            if ($binCmp !== 0) {
+                return $binCmp;
+            }
+            return strcmp((string)$a['location_code'], (string)$b['location_code']);
+        });
+
+        return array_values(array_map(static fn ($row) => $row['location_code'], $bins));
     }
 
     public function groupOrdersIntoBatch($orders) {
         usort($orders, function($a, $b) {
-            $zoneCmp = strcmp((string)$a['zone_name'], (string)$b['zone_name']);
-            if ($zoneCmp !== 0) {
-                return $zoneCmp;
+            $binCmp = ((int)($a['bin_id'] ?? PHP_INT_MAX)) <=> ((int)($b['bin_id'] ?? PHP_INT_MAX));
+            if ($binCmp !== 0) {
+                return $binCmp;
             }
             return strcmp((string)$a['location_code'], (string)$b['location_code']);
         });

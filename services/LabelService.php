@@ -7,6 +7,7 @@ class LabelService {
     private $order;
     private $label;
     private $qr;
+    private $lastError = '';
 
     public function __construct() {
         $this->order = new Order();
@@ -41,11 +42,17 @@ class LabelService {
     }
 
     public function confirmLabelAttached($orderId, $qrCode) {
+        $this->lastError = '';
         $row = $this->label->fetchByOrderId($orderId);
         if (empty($row) || $row['qr_code'] !== $qrCode) {
+            $this->lastError = 'Wrong label, reprint required';
             return false;
         }
 
         return $this->label->confirmScanned($orderId, $qrCode);
+    }
+
+    public function getLastError() {
+        return $this->lastError;
     }
 }

@@ -96,11 +96,11 @@ $weightResult = $_SESSION['packing_weight_result'] ?? [];
                                 </thead>
                                 <tbody>
                                     <?php foreach ($sortGuidance as $row): ?>
-                                        <tr class="<?= isset($confirmedBins[$row['item_id']]) ? 'table-success' : '' ?>">
+                                        <tr class="<?= isset($confirmedBins[$row['order_line_id']]) ? 'table-success' : '' ?>">
                                             <td><?= htmlspecialchars($row['sku']) ?></td>
                                             <td><?= htmlspecialchars($row['source_bin']) ?></td>
                                             <td><?= htmlspecialchars($row['target_bin']) ?></td>
-                                            <td><?= isset($confirmedBins[$row['item_id']]) ? 'Yes' : 'No' ?></td>
+                                            <td><?= isset($confirmedBins[$row['order_line_id']]) ? 'Yes' : 'No' ?></td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
@@ -110,10 +110,10 @@ $weightResult = $_SESSION['packing_weight_result'] ?? [];
                         <form method="POST" action="index.php?page=packing&action=placeItemInBin" class="row g-2 align-items-end">
                             <div class="col-md-5">
                                 <label class="form-label">Item</label>
-                                <select name="item_id" class="form-select" required>
+                                <select name="order_line_id" class="form-select" required>
                                     <option value="">Choose item</option>
                                     <?php foreach ($sortGuidance as $row): ?>
-                                        <option value="<?= (int)$row['item_id'] ?>">
+                                        <option value="<?= (int)$row['order_line_id'] ?>">
                                             <?= htmlspecialchars($row['sku'] . ' - ' . $row['target_bin']) ?>
                                         </option>
                                     <?php endforeach; ?>

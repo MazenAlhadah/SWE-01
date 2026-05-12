@@ -49,7 +49,12 @@ class StorageController {
         $incoming_items = $model->fetchIncomingShipmentItems();
         $cross_dock   = [];
         if (!empty($incoming_items)) {
-            $cross_dock = $bs->checkAgainstBackorders($incoming_items);
+            $incoming_items = array_values(array_filter($incoming_items, function ($item) {
+                return in_array($item['state'] ?? '', ['AT_DOCK', 'BEING_INSPECTED'], true);
+            }));
+            $cross_dock = !empty($incoming_items)
+                ? $bs->prepareCrossDocking($incoming_items)
+                : [];
         }
 
         $success = '';
@@ -142,7 +147,7 @@ class StorageController {
             /* updateBackorderRecord -> setBackorderStatus */
             $bs->updateBackorderRecord($backorder_id, 'CROSS_DOCKED');
             
-            /* bypassStorageIntake & updateInventory */
+            /* bypass storage and keep the item routed to packing */
             $backorder->markItemForCrossDocking($item_id);
             
             $_SESSION['notifications'][] = "Item {$item_id} cross-docked to packing.";

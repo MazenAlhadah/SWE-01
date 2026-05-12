@@ -33,12 +33,11 @@ class AuditController {
         $this->persistUpdatedAccuracyScore($supplierId, $accuracyScore);
         
         $trs = new TierRankingService();
-        $trs->updateSupplierTierRanking($supplierId, $accuracyScore);
+        $rankings = $trs->updateSupplierTierRanking($supplierId, $accuracyScore);
         
-        // Re-fetch supplier to get updated tier
         $auditReport = [
             'accuracyScore' => $accuracyScore,
-            'tierRank' => $this->fetchTierRank($supplierId),
+            'tierRank' => $this->fetchTierRank($supplierId, $rankings),
             'deliveryHistory' => $deliveryHistory
         ];
 
@@ -50,11 +49,11 @@ class AuditController {
         $ordered = 0;
         $received = 0;
         foreach ($history as $h) {
-            $ordered += $h['quantity_ordered'];
-            $received += $h['quantity_received'];
+            $ordered += (int)$h['quantity_ordered'];
+            $received += (int)$h['quantity_received'];
         }
         if ($ordered == 0) return 1.0;
-        return round($received / $ordered, 2);
+        return round($received / $ordered, 4);
     }
 
     public function persistUpdatedAccuracyScore($supplierId, $score) {
@@ -63,11 +62,19 @@ class AuditController {
         $stmt->execute([$score, $supplierId]);
     }
 
-    private function fetchTierRank($supplierId) {
+    private function fetchTierRank($supplierId, $rankings = null) {
+        if (is_array($rankings)) {
+            foreach ($rankings as $ranking) {
+                if ((int)$ranking['supplier_id'] === (int)$supplierId) {
+                    return (int)$ranking['tier_rank'];
+                }
+            }
+        }
+
         $conn = Database::getInstance()->getConnection();
         $stmt = $conn->prepare("SELECT tier_rank FROM SUPPLIER WHERE supplier_id = ?");
         $stmt->execute([$supplierId]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $row ? (int)$row['tier_rank'] : 3;
+        return $row ? (int)$row['tier_rank'] : 1;
     }
 }

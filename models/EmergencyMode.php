@@ -33,7 +33,7 @@ class EmergencyMode {
     public function pauseAllPickLists() {
         if ($this->hasTable('PICK_LIST')) {
             $stmt = $this->conn->prepare(
-                "UPDATE PICK_LIST SET status = 'PAUSED' WHERE status = 'ACTIVE'"
+                "UPDATE PICK_LIST SET status = 'PAUSED'"
             );
             $stmt->execute();
         }

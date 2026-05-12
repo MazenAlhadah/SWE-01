@@ -24,6 +24,9 @@
     <?php if (isset($_GET['error']) && $_GET['error'] === 'emergency'): ?>
         <div class="alert alert-danger">Picking is paused because emergency mode is active.</div>
     <?php endif; ?>
+    <?php if (isset($_GET['error']) && $_GET['error'] === 'incomplete'): ?>
+        <div class="alert alert-danger">All pick-list items must be scanned before the batch can be completed.</div>
+    <?php endif; ?>
 
     <?php
     $route = $_SESSION['active_picklist_route'] ?? ($pickList['route'] ?? []);

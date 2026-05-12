@@ -3,6 +3,13 @@ require_once __DIR__ . '/../models/Order.php';
 
 class FulfillmentStateMachine {
     private $order;
+    private const TRANSITIONS = [
+        'PROCESSING' => 'PICKING',
+        'PICKING' => 'PACKING',
+        'PACKING' => 'SHIPPED',
+        'SHIPPED' => 'DELIVERED',
+        'DELIVERED' => ''
+    ];
 
     public function __construct() {
         $this->order = new Order();
@@ -26,21 +33,21 @@ class FulfillmentStateMachine {
         if ($currentState === '') {
             return [
                 'valid' => false,
-                'reason' => 'Order state could not be found.'
+                'reason' => 'Invalid state transition'
             ];
         }
 
         if ($allowed === '') {
             return [
                 'valid' => false,
-                'reason' => 'This order is already in its final state.'
+                'reason' => 'Invalid state transition'
             ];
         }
 
         if ($allowed !== $nextState) {
             return [
                 'valid' => false,
-                'reason' => "Invalid transition. Next allowed state is {$allowed}."
+                'reason' => 'Invalid state transition'
             ];
         }
 
@@ -55,14 +62,6 @@ class FulfillmentStateMachine {
     }
 
     private function getNextAllowedState($currentState) {
-        $map = [
-            'PROCESSING' => 'PICKING',
-            'PICKING' => 'PACKING',
-            'PACKING' => 'SHIPPED',
-            'SHIPPED' => 'DELIVERED',
-            'DELIVERED' => ''
-        ];
-
-        return $map[$currentState] ?? '';
+        return self::TRANSITIONS[$currentState] ?? '';
     }
 }

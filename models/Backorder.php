@@ -47,16 +47,28 @@ class Backorder {
 
     /* UC-15: match incoming PO items to open backorders by item_id */
     public function matchIncomingToBackorders($incoming_items, $backorders) {
-        $incoming_ids = array_column($incoming_items, 'item_id');
-        return array_values(array_filter($backorders, function($b) use ($incoming_ids) {
-            return in_array($b['item_id'], $incoming_ids);
+        $incomingByItem = [];
+        foreach ($incoming_items as $item) {
+            $incomingByItem[(int)$item['item_id']] = $item;
+        }
+
+        return array_values(array_filter($backorders, function($b) use ($incomingByItem) {
+            return isset($incomingByItem[(int)$b['item_id']]);
         }));
     }
 
     /* UC-15: setBackorderStatus — used by BackorderService */
     public function setBackorderStatus($backorder_id, $status) {
+        if ($status === 'FULFILLED') {
+            $stmt = $this->conn->prepare(
+                "UPDATE BACKORDER SET status = ?, fulfilled_at = NOW() WHERE backorder_id = ?"
+            );
+            $stmt->execute([$status, $backorder_id]);
+            return;
+        }
+
         $stmt = $this->conn->prepare(
-            "UPDATE BACKORDER SET status = ?, fulfilled_at = NOW() WHERE backorder_id = ?"
+            "UPDATE BACKORDER SET status = ?, fulfilled_at = NULL WHERE backorder_id = ?"
         );
         $stmt->execute([$status, $backorder_id]);
     }

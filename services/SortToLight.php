@@ -37,13 +37,13 @@ class SortToLight {
         return $result;
     }
 
-    public function confirmPlacement($assignments, $itemId, $binId) {
-        return $this->validateBinAssignment($assignments, $itemId, $binId);
+    public function confirmPlacement($assignments, $orderLineId, $binId) {
+        return $this->validateBinAssignment($assignments, $orderLineId, $binId);
     }
 
-    public function validateBinAssignment($assignments, $itemId, $binId) {
+    public function validateBinAssignment($assignments, $orderLineId, $binId) {
         foreach ($assignments as $row) {
-            if ((int)$row['item_id'] === (int)$itemId && $row['target_bin'] === $binId) {
+            if ((int)$row['order_line_id'] === (int)$orderLineId && $row['target_bin'] === $binId) {
                 return true;
             }
         }

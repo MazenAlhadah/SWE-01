@@ -103,13 +103,31 @@ class PickingController {
         foreach ($items as $i => $row) {
             if ((int)$row['order_line_id'] === (int)$matchedItem['order_line_id']) {
                 $items[$i]['is_picked'] = 1;
+                $items[$i]['picked_at'] = date('Y-m-d H:i:s');
                 break;
             }
         }
         $_SESSION['active_picklist_items'] = $items;
 
-        foreach (($_SESSION['active_picklist_order_ids'] ?? []) as $orderId) {
-            $orderModel->setOrderState($orderId, 'PICKING', $pickerId);
+        if ($this->allItemsPicked($items)) {
+            if ($picklistId) {
+                $pickListModel->setCompleted($picklistId);
+            }
+
+            foreach (($_SESSION['active_picklist_order_ids'] ?? []) as $orderId) {
+                $orderModel->setOrderState($orderId, 'PICKING', $pickerId);
+            }
+
+            unset(
+                $_SESSION['active_picklist_id'],
+                $_SESSION['active_picklist_route'],
+                $_SESSION['active_picklist_index'],
+                $_SESSION['active_picklist_items'],
+                $_SESSION['active_picklist_order_ids']
+            );
+
+            header("Location: index.php?page=picking&done=1");
+            exit();
         }
 
         header("Location: index.php?page=picking&picked=1");
@@ -131,21 +149,13 @@ class PickingController {
             exit();
         }
 
-        $picklistId = $_SESSION['active_picklist_id'] ?? 0;
-        if ($picklistId) {
-            $pickListModel = new PickList();
-            $pickListModel->setCompleted($picklistId);
+        $items = $_SESSION['active_picklist_items'] ?? [];
+        if (!$this->allItemsPicked($items)) {
+            header("Location: index.php?page=picking&error=incomplete");
+            exit();
         }
 
-        unset(
-            $_SESSION['active_picklist_id'],
-            $_SESSION['active_picklist_route'],
-            $_SESSION['active_picklist_index'],
-            $_SESSION['active_picklist_items'],
-            $_SESSION['active_picklist_order_ids']
-        );
-
-        header("Location: index.php?page=picking&done=1");
+        header("Location: index.php?page=picking&next=1");
         exit();
     }
 
@@ -187,5 +197,19 @@ class PickingController {
             'items' => $items,
             'order_ids' => $orderIds
         ];
+    }
+
+    private function allItemsPicked($items) {
+        if (empty($items)) {
+            return false;
+        }
+
+        foreach ($items as $row) {
+            if (empty($row['is_picked'])) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

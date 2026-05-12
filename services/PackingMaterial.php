@@ -10,6 +10,11 @@ class PackingMaterial {
 
     public function suggestBoxSize($items) {
         $total = 0;
+        $standardBoxes = [
+            ['name' => 'Small Box', 'capacity' => 4000],
+            ['name' => 'Medium Box', 'capacity' => 12000],
+            ['name' => 'Large Box', 'capacity' => 24000],
+        ];
 
         foreach ($items as $row) {
             $height = (int)($row['height_cm'] ?? 0);
@@ -19,13 +24,13 @@ class PackingMaterial {
             $total += ($height * $width * $depth * max($qty, 1));
         }
 
-        if ($total <= 4000) {
-            return 'Small Box';
+        foreach ($standardBoxes as $box) {
+            if ($total <= $box['capacity']) {
+                return $box['name'];
+            }
         }
-        if ($total <= 12000) {
-            return 'Medium Box';
-        }
-        return 'Large Box';
+
+        return 'Oversized Parcel';
     }
 
     public function recommendBoxSize($orderId) {

@@ -21,6 +21,7 @@ class TierRankingService {
 
         $rankings = $this->recomputeTierRankings($allScores);
         $this->updateTierRankings($rankings);
+        return $rankings;
     }
 
     public function fetchAllSupplierScores() {
@@ -31,23 +32,29 @@ class TierRankingService {
     }
 
     public function recomputeTierRankings($scores) {
-        // Trivial simulation: Top 30% are Tier 1, next 40% Tier 2, bottom 30% Tier 3
-        // For simplicity, let's just use thresholds:
-        // >= 0.90 -> 1
-        // >= 0.70 -> 2
-        // else -> 3
-        
-        $rankings = [];
-        foreach ($scores as $s) {
-            $tier = 3;
-            if ($s['accuracy_score'] >= 0.90) {
-                $tier = 1;
-            } elseif ($s['accuracy_score'] >= 0.70) {
-                $tier = 2;
+        usort($scores, function($a, $b) {
+            $scoreCompare = (float)$b['accuracy_score'] <=> (float)$a['accuracy_score'];
+            if ($scoreCompare !== 0) {
+                return $scoreCompare;
             }
+
+            return (int)$a['supplier_id'] <=> (int)$b['supplier_id'];
+        });
+
+        $rankings = [];
+        $currentRank = 0;
+        $lastScore = null;
+
+        foreach ($scores as $index => $s) {
+            $score = (float)$s['accuracy_score'];
+            if ($lastScore === null || $score !== $lastScore) {
+                $currentRank = $index + 1;
+                $lastScore = $score;
+            }
+
             $rankings[] = [
                 'supplier_id' => $s['supplier_id'],
-                'tier_rank' => $tier
+                'tier_rank' => $currentRank
             ];
         }
         return $rankings;

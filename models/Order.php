@@ -3,6 +3,13 @@ require_once __DIR__ . '/../config/Database.php';
 
 class Order {
     private $conn;
+    private const ORDER_TRANSITIONS = [
+        'PROCESSING' => 'PICKING',
+        'PICKING' => 'PACKING',
+        'PACKING' => 'SHIPPED',
+        'SHIPPED' => 'DELIVERED',
+        'DELIVERED' => ''
+    ];
 
     public function __construct() {
         $this->conn = Database::getInstance()->getConnection();
@@ -51,41 +58,24 @@ class Order {
             return [];
         }
 
-        $readyForPackingCondition = "co.status = 'PICKING'";
-        if ($this->hasColumn('ORDER_LINE_ITEM', 'state')) {
-            $readyForPackingCondition =
-                "co.status = 'PICKING'
-                 AND NOT EXISTS (
-                     SELECT 1
-                     FROM ORDER_LINE_ITEM pending
-                     WHERE pending.order_id = co.order_id
-                       AND COALESCE(pending.state, '') <> 'PICKING'
-                 )";
-        }
-
         $sql =
             "SELECT co.order_id, co.status, co.urgency, co.shipping_address, co.created_at,
                     COUNT(oli.order_line_id) AS item_count,
                     SUM(oli.quantity) AS total_units
              FROM CUSTOMER_ORDER co
              JOIN ORDER_LINE_ITEM oli ON oli.order_id = co.order_id
-             WHERE ({$readyForPackingCondition}";
+             WHERE co.status = 'PICKING'";
 
         $params = [];
 
-        if ($this->hasColumn('CUSTOMER_ORDER', 'packer_id')) {
-            $sql .= " OR (co.status = 'PACKING' AND (co.packer_id IS NULL";
-            if ($packerId !== null) {
-                $sql .= " OR co.packer_id = ?))";
-                $params[] = $packerId;
-            } else {
-                $sql .= "))";
-            }
+        if ($this->hasColumn('CUSTOMER_ORDER', 'packer_id') && $packerId !== null) {
+            $sql .= " AND (co.packer_id IS NULL OR co.packer_id = ?)";
+            $params[] = $packerId;
         }
 
-        $sql .= ")
+        $sql .= "
              GROUP BY co.order_id, co.status, co.urgency, co.shipping_address, co.created_at
-             ORDER BY FIELD(co.status, 'PACKING', 'PICKING'), co.created_at ASC";
+             ORDER BY co.created_at ASC";
 
         $stmt = $this->conn->prepare($sql);
         $stmt->execute($params);
@@ -304,20 +294,20 @@ class Order {
 
         if ($this->hasColumn('CUSTOMER_ORDER', 'packer_id') && $packerId !== null) {
             $stmt = $this->conn->prepare(
-                "UPDATE CUSTOMER_ORDER SET status = 'PACKING', packer_id = ? WHERE order_id = ?"
+                "UPDATE CUSTOMER_ORDER SET packer_id = ? WHERE order_id = ?"
             );
             $stmt->execute([$packerId, $orderId]);
             return;
         }
-
-        $stmt = $this->conn->prepare(
-            "UPDATE CUSTOMER_ORDER SET status = 'PACKING' WHERE order_id = ?"
-        );
-        $stmt->execute([$orderId]);
     }
 
     public function updateOrderState($orderId, $state) {
         if (!$this->hasTable('CUSTOMER_ORDER')) {
+            return false;
+        }
+
+        $currentState = $this->fetchOrderState($orderId);
+        if (!$this->isValidNextState($currentState, $state)) {
             return false;
         }
 
@@ -337,7 +327,12 @@ class Order {
 
         $stmt = $this->conn->prepare($sql);
         $stmt->execute($params);
-        return $stmt->rowCount() > 0;
+        if ($stmt->rowCount() <= 0) {
+            return false;
+        }
+
+        $this->logOrderTransition($orderId, $currentState, $state);
+        return true;
     }
 
     public function fetchCompletedOrdersOlderThan($months = 12) {
@@ -345,7 +340,6 @@ class Order {
             return [];
         }
 
-        $dateField = $this->hasColumn('CUSTOMER_ORDER', 'delivered_at') ? 'delivered_at' : 'created_at';
         $select = ['order_id', 'status'];
         $optional = [
             'customer_id',
@@ -371,9 +365,8 @@ class Order {
             "SELECT " . implode(', ', $select) . "
              FROM CUSTOMER_ORDER
              WHERE status = 'DELIVERED'
-               AND {$dateField} IS NOT NULL
-               AND {$dateField} < DATE_SUB(NOW(), INTERVAL ? MONTH)
-             ORDER BY {$dateField} ASC"
+               AND created_at < DATE_SUB(NOW(), INTERVAL ? MONTH)
+             ORDER BY created_at ASC"
         );
         $stmt->execute([(int)$months]);
         $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -479,6 +472,30 @@ class Order {
         $stmt = $this->conn->prepare("SHOW TABLES LIKE ?");
         $stmt->execute([$table]);
         return $stmt->fetch() !== false;
+    }
+
+    private function isValidNextState($currentState, $nextState) {
+        if ($currentState === '' || !isset(self::ORDER_TRANSITIONS[$currentState])) {
+            return false;
+        }
+
+        return self::ORDER_TRANSITIONS[$currentState] === $nextState;
+    }
+
+    private function logOrderTransition($orderId, $fromState, $toState) {
+        if (!$this->hasTable('AUDIT_LOG')) {
+            return;
+        }
+
+        $stmt = $this->conn->prepare(
+            "INSERT INTO AUDIT_LOG (user_id, sensor_id, event_type, event_detail, reason, discrepancy_rate, timestamp)
+             VALUES (?, NULL, 'ORDER_STATUS_CHANGED', ?, ?, 0, NOW())"
+        );
+        $stmt->execute([
+            $_SESSION['user_id'] ?? null,
+            "Order {$orderId}: {$fromState} -> {$toState}",
+            'Valid state transition'
+        ]);
     }
 
     private function hasColumn($table, $column) {
