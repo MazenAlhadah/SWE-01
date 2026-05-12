@@ -132,7 +132,8 @@ class OrderController {
         }
 
         if ($role === 'packer') {
-            return $currentState === 'PICKING' && $nextState === 'PACKING';
+            return ($currentState === 'PICKING' && $nextState === 'PACKING')
+                || ($currentState === 'PACKING' && $nextState === 'SHIPPED');
         }
 
         return false;

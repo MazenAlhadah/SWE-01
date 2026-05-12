@@ -51,13 +51,25 @@ class Order {
             return [];
         }
 
+        $readyForPackingCondition = "co.status = 'PICKING'";
+        if ($this->hasColumn('ORDER_LINE_ITEM', 'state')) {
+            $readyForPackingCondition =
+                "co.status = 'PICKING'
+                 AND NOT EXISTS (
+                     SELECT 1
+                     FROM ORDER_LINE_ITEM pending
+                     WHERE pending.order_id = co.order_id
+                       AND COALESCE(pending.state, '') <> 'PICKING'
+                 )";
+        }
+
         $sql =
             "SELECT co.order_id, co.status, co.urgency, co.shipping_address, co.created_at,
                     COUNT(oli.order_line_id) AS item_count,
                     SUM(oli.quantity) AS total_units
              FROM CUSTOMER_ORDER co
              JOIN ORDER_LINE_ITEM oli ON oli.order_id = co.order_id
-             WHERE (co.status = 'PICKING'";
+             WHERE ({$readyForPackingCondition}";
 
         $params = [];
 

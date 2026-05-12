@@ -14,6 +14,8 @@ require_once __DIR__ . '/../services/SortToLight.php';
 require_once __DIR__ . '/../services/PackingMaterial.php';
 require_once __DIR__ . '/../services/ParcelValidator.php';
 require_once __DIR__ . '/../services/LabelService.php';
+require_once __DIR__ . '/../services/FulfillmentStateMachine.php';
+require_once __DIR__ . '/../models/NotificationService.php';
 
 class PackingController {
 
@@ -203,6 +205,24 @@ class PackingController {
             header("Location: index.php?page=packing");
             exit();
         }
+
+        $sm = new FulfillmentStateMachine();
+        $currentState = $sm->fetchOrderState($orderId);
+        $validation = $sm->validateTransition($currentState, 'SHIPPED');
+
+        if (!$validation['valid']) {
+            $_SESSION['packing_error'] = $validation['reason'];
+            header("Location: index.php?page=packing");
+            exit();
+        }
+
+        if (!$sm->updateOrderState($orderId, 'SHIPPED')) {
+            $_SESSION['packing_error'] = 'Order could not be moved to SHIPPED after label confirmation.';
+            header("Location: index.php?page=packing");
+            exit();
+        }
+
+        NotificationService::getInstance()->update("Order {$orderId} has shipped and is in transit.");
 
         $_SESSION['packing_success'] = "Order {$orderId} packed and labeled successfully.";
         unset(
