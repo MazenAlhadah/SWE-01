@@ -32,6 +32,14 @@ class Inventory {
              FROM INVENTORY i
              JOIN ITEM it ON it.item_id = i.item_id
              WHERE i.quantity_available < it.safety_stock_qty
+               AND NOT EXISTS (
+                   SELECT 1
+                   FROM PO_LINE_ITEM pli
+                   JOIN PURCHASE_ORDER po ON po.po_id = pli.po_id
+                   WHERE pli.item_id = it.item_id
+                     AND po.status IN ('PENDING', 'CONFIRMED', 'MODIFICATION_REQUESTED')
+                     AND COALESCE(pli.quantity_received, 0) < COALESCE(pli.quantity_ordered, 0)
+               )
              ORDER BY it.sku"
         );
         $stmt->execute();
