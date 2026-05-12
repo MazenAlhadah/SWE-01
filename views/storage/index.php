@@ -116,8 +116,13 @@
             <tr><th>Zone</th><th>Type</th><th>Used m³</th><th>Total m³</th><th>Temp</th><th>Humidity</th></tr>
         </thead>
         <tbody>
-        <?php foreach ($zones as $z): ?>
-            <tr>
+        <?php foreach ($zones as $z):
+            $zone_pct = ($z['total_capacity_m3'] > 0)
+                ? ($z['current_occupancy_m3'] / $z['total_capacity_m3'] * 100)
+                : 0;
+            $zone_row_class = $zone_pct >= 90 ? 'table-danger' : '';
+        ?>
+            <tr class="<?= $zone_row_class ?>">
                 <td><?= htmlspecialchars($z['zone_name']) ?></td>
                 <td><?= htmlspecialchars($z['zone_type']) ?></td>
                 <td><?= number_format($z['current_occupancy_m3'], 2) ?></td>
