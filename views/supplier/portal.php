@@ -15,6 +15,9 @@
     <?php if (isset($_GET['carrier_assigned'])): ?>
         <div class="alert alert-success">Carrier assigned and label generation initiated.</div>
     <?php endif; ?>
+    <?php if (isset($_GET['carrier_already_assigned'])): ?>
+        <div class="alert alert-info">Carrier has already been assigned for that shipment.</div>
+    <?php endif; ?>
 
     <?php if (isset($po) && $po): ?>
         <!-- UC-16: PO Details View -->
@@ -58,11 +61,9 @@
                     </tfoot>
                 </table>
 
-                <?php if ($po['status'] === 'CONFIRMED'): ?>
-                    <p class="text-success mt-2"><strong>You have confirmed this order.</strong></p>
-                    <a href="index.php?page=supplier&action=openShipmentUpdate&id=<?= (int)$po['po_id'] ?>"
-                       class="btn btn-primary mt-2">Open Shipment Update</a>
-                <?php else: ?>
+                <?php if ($po['status'] === 'PENDING'): ?>
+                    <p class="text-muted mt-2"><strong>Awaiting manager approval before supplier action.</strong></p>
+                <?php elseif ($po['status'] === 'APPROVED'): ?>
                     <div class="mt-3">
                         <form action="index.php?page=supplier&action=submitConfirmation" method="POST" class="d-inline me-2">
                             <input type="hidden" name="po_id" value="<?= (int)$po['po_id'] ?>">
@@ -77,6 +78,14 @@
                             </div>
                         </form>
                     </div>
+                <?php elseif ($po['status'] === 'CONFIRMED'): ?>
+                    <p class="text-success mt-2"><strong>Supplier confirmation recorded.</strong></p>
+                    <a href="index.php?page=supplier&action=openShipmentUpdate&id=<?= (int)$po['po_id'] ?>"
+                       class="btn btn-primary mt-2">Open Shipment Update</a>
+                <?php elseif ($po['status'] === 'MODIFICATION_REQUESTED'): ?>
+                    <p class="text-warning mt-2"><strong>Modification request submitted. Awaiting manager review.</strong></p>
+                <?php else: ?>
+                    <p class="text-muted mt-2"><strong>No supplier action is available for this status.</strong></p>
                 <?php endif; ?>
             </div>
         </div>

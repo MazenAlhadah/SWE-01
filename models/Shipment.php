@@ -117,6 +117,28 @@ class Shipment {
         return $row;
     }
 
+    public function getShipmentByPoId($poId) {
+        $stmt = $this->conn->prepare(
+            "SELECT shipment_id
+             FROM SHIPMENT
+             WHERE po_id = ?
+             ORDER BY shipment_id DESC
+             LIMIT 1"
+        );
+        $stmt->execute([$poId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row) {
+            return [];
+        }
+
+        return $this->getShipmentById((int)$row['shipment_id']) ?: [];
+    }
+
+    public function hasShipmentForPo($poId) {
+        return !empty($this->getShipmentByPoId($poId));
+    }
+
     public function setShipmentState($shipmentId, $state) {
         $stmt = $this->conn->prepare(
             "UPDATE SHIPMENT SET state = ? WHERE shipment_id = ?"

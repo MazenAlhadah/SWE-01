@@ -37,7 +37,7 @@ class Inventory {
                    FROM PO_LINE_ITEM pli
                    JOIN PURCHASE_ORDER po ON po.po_id = pli.po_id
                    WHERE pli.item_id = it.item_id
-                     AND po.status IN ('PENDING', 'CONFIRMED', 'MODIFICATION_REQUESTED')
+                     AND po.status IN ('PENDING', 'APPROVED', 'CONFIRMED', 'MODIFICATION_REQUESTED')
                      AND COALESCE(pli.quantity_received, 0) < COALESCE(pli.quantity_ordered, 0)
                )
              ORDER BY it.sku"

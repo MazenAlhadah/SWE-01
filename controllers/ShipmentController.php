@@ -38,6 +38,7 @@ class ShipmentController {
         $po = $poModel->getPO($poId);
         $supplierModel = new Supplier();
         $supplier = $supplierModel->findByUserId($_SESSION['user_id']);
+        $shipmentModel = new Shipment();
 
         if (!$po || !$supplier || $po['supplier_id'] != $supplier['supplier_id'] || $po['status'] !== 'CONFIRMED') {
             $error = 'Only confirmed purchase orders can be dispatched.';
@@ -48,9 +49,17 @@ class ShipmentController {
             return;
         }
 
-        $shipment = null;
+        $shipment = $shipmentModel->getShipmentByPoId($poId);
         $recommendedCarrier = null;
         $availableCarriers = [];
+
+        if (!empty($shipment)) {
+            list($recommendedCarrier, $availableCarriers) = $this->buildCarrierSelectionData((int)$shipment['shipment_id']);
+            $backorderSummary = $this->triggerBackorderCheck((int)$shipment['shipment_id']);
+            $shipment['backorderSummary'] = $backorderSummary;
+            $success = 'Shipment details have already been submitted for this purchase order.';
+        }
+
         require_once __DIR__ . '/../views/supplier/shipment.php';
     }
 
@@ -59,16 +68,26 @@ class ShipmentController {
         $po = $poModel->getPO($poId);
         $supplierModel = new Supplier();
         $supplier = $supplierModel->findByUserId($_SESSION['user_id']);
+        $shipmentModel = new Shipment();
 
         if (!$po || !$supplier || $po['supplier_id'] != $supplier['supplier_id'] || $po['status'] !== 'CONFIRMED') {
             header("Location: index.php?page=supplier&shipment_error=1");
             exit();
         }
 
+        if ($date === '' || strtotime($date) === false) {
+            header("Location: index.php?page=supplier&shipment_error=1");
+            exit();
+        }
+
+        if ($shipmentModel->hasShipmentForPo($poId)) {
+            header("Location: index.php?page=supplier&action=openShipmentUpdate&id={$poId}&shipment_exists=1");
+            exit();
+        }
+
         $lte = new LeadTimeEstimator();
         $estimatedArrivalDate = $lte->estimateArrival($po['supplier_id'], $date);
 
-        $shipmentModel = new Shipment();
         $shipmentId = $shipmentModel->persistShipmentDetails($poId, $date, $estimatedArrivalDate, $items);
 
         $this->initReceivingStateMachine($shipmentId);
@@ -133,6 +152,11 @@ class ShipmentController {
         if (!$supplier || !$shipmentSupplierId || (int)$supplier['supplier_id'] !== $shipmentSupplierId) {
             http_response_code(403);
             die("Access denied.");
+        }
+
+        if ($shipmentModel->checkCarrierAssignment($shipmentId)) {
+            header("Location: index.php?page=supplier&carrier_already_assigned=1");
+            exit();
         }
 
         $carrierService = new CarrierSelectionService();

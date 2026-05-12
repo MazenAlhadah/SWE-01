@@ -10,8 +10,11 @@
     <?php if (!empty($success)): ?>
         <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
     <?php endif; ?>
+    <?php if (isset($_GET['shipment_exists'])): ?>
+        <div class="alert alert-info">Dispatch details were already submitted for this purchase order.</div>
+    <?php endif; ?>
 
-    <?php if (!empty($po)): ?>
+    <?php if (!empty($po) && empty($shipment)): ?>
         <div class="card mb-4">
             <div class="card-header bg-info text-white">
                 <strong>Dispatch Purchase Order #<?= (int)$po['po_id'] ?></strong>

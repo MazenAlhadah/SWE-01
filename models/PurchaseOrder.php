@@ -39,7 +39,7 @@ class PurchaseOrder {
     }
 
     public function approvePO($poId) {
-        $stmt = $this->conn->prepare("UPDATE PURCHASE_ORDER SET status = 'CONFIRMED' WHERE po_id = ?");
+        $stmt = $this->conn->prepare("UPDATE PURCHASE_ORDER SET status = 'APPROVED' WHERE po_id = ?");
         return $stmt->execute([$poId]);
     }
 

@@ -196,7 +196,7 @@ class ProcurementController implements StockObserver {
         $supplier = $supplierModel->findByUserId($_SESSION['user_id']);
         $poModel = new PurchaseOrder();
         $po = $poModel->getPO($poId);
-        if ($poId && $supplier && $po && $po['supplier_id'] == $supplier['supplier_id']) {
+        if ($poId && $supplier && $po && $po['supplier_id'] == $supplier['supplier_id'] && $po['status'] === 'APPROVED') {
             $poModel = new PurchaseOrder();
             $poModel->updatePOStatus($poId, 'CONFIRMED');
             $this->notifyPOConfirmed($poId);
@@ -212,7 +212,7 @@ class ProcurementController implements StockObserver {
         $supplier = $supplierModel->findByUserId($_SESSION['user_id']);
         $poModel = new PurchaseOrder();
         $po = $poModel->getPO($poId);
-        if ($poId && $supplier && $po && $po['supplier_id'] == $supplier['supplier_id']) {
+        if ($poId && $supplier && $po && $po['supplier_id'] == $supplier['supplier_id'] && $po['status'] === 'APPROVED') {
             $poModel = new PurchaseOrder();
             $poModel->updatePOStatus($poId, 'MODIFICATION_REQUESTED');
             $this->notifyManagerModificationRequested($poId, $details);
