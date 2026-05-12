@@ -32,8 +32,11 @@ class Backorder {
         $stmt = $this->conn->prepare(
             "SELECT b.backorder_id, b.order_line_id, b.item_id, b.quantity_needed,
                     b.reason, b.status, b.created_at,
+                    oli.order_id, co.customer_id,
                     it.sku, it.name
              FROM BACKORDER b
+             JOIN ORDER_LINE_ITEM oli ON oli.order_line_id = b.order_line_id
+             JOIN CUSTOMER_ORDER co ON co.order_id = oli.order_id
              JOIN ITEM it ON it.item_id = b.item_id
              WHERE b.status = 'OPEN'
              ORDER BY b.created_at ASC"

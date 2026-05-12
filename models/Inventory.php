@@ -25,10 +25,25 @@ class Inventory {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /* UC-05: fetch only SKUs below safety stock for reorder handling */
+    /* UC-05: fetch items below safety stock for reorder handling.
+     * - Items with a CONFIRMED or MODIFICATION_REQUESTED open PO are excluded (already actioned).
+     * - Items with only a PENDING PO are included but flagged (has_pending_po=1) so the view
+     *   can show a disabled "Awaiting Approval" button rather than allowing a duplicate PO. */
     public function fetchAffectedSKUs() {
         $stmt = $this->conn->prepare(
-            "SELECT it.sku
+            "SELECT it.sku,
+                    it.name,
+                    i.quantity_available,
+                    it.safety_stock_qty,
+                    (it.safety_stock_qty - i.quantity_available) AS reorder_qty,
+                    EXISTS (
+                        SELECT 1
+                        FROM PO_LINE_ITEM pli
+                        JOIN PURCHASE_ORDER po ON po.po_id = pli.po_id
+                        WHERE pli.item_id = it.item_id
+                          AND po.status = 'PENDING'
+                          AND COALESCE(pli.quantity_received,0) < COALESCE(pli.quantity_ordered,0)
+                    ) AS has_pending_po
              FROM INVENTORY i
              JOIN ITEM it ON it.item_id = i.item_id
              WHERE i.quantity_available < it.safety_stock_qty
@@ -37,13 +52,13 @@ class Inventory {
                    FROM PO_LINE_ITEM pli
                    JOIN PURCHASE_ORDER po ON po.po_id = pli.po_id
                    WHERE pli.item_id = it.item_id
-                     AND po.status IN ('PENDING', 'APPROVED', 'CONFIRMED', 'MODIFICATION_REQUESTED')
-                     AND COALESCE(pli.quantity_received, 0) < COALESCE(pli.quantity_ordered, 0)
+                     AND po.status IN ('CONFIRMED','MODIFICATION_REQUESTED')
+                     AND COALESCE(pli.quantity_received,0) < COALESCE(pli.quantity_ordered,0)
                )
              ORDER BY it.sku"
         );
         $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     /* UC-01 / UC-06: total occupancy ratio across all zones */

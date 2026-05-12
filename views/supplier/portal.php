@@ -63,11 +63,12 @@
 
                 <?php if ($po['status'] === 'PENDING'): ?>
                     <p class="text-muted mt-2"><strong>Awaiting manager approval before supplier action.</strong></p>
-                <?php elseif ($po['status'] === 'APPROVED'): ?>
+                <?php elseif ($po['status'] === 'CONFIRMED'): ?>
                     <div class="mt-3">
+                        <p class="text-info"><strong>This order has been approved by the manager and sent to you. Please confirm or request a modification.</strong></p>
                         <form action="index.php?page=supplier&action=submitConfirmation" method="POST" class="d-inline me-2">
                             <input type="hidden" name="po_id" value="<?= (int)$po['po_id'] ?>">
-                            <button type="submit" class="btn btn-success">Confirm PO</button>
+                            <button type="submit" class="btn btn-success"> Confirm & Prepare Shipment</button>
                         </form>
                         
                         <form action="index.php?page=supplier&action=submitModificationRequest" method="POST" class="d-inline mt-2">
@@ -78,8 +79,8 @@
                             </div>
                         </form>
                     </div>
-                <?php elseif ($po['status'] === 'CONFIRMED'): ?>
-                    <p class="text-success mt-2"><strong>Supplier confirmation recorded.</strong></p>
+                <?php elseif ($po['status'] === 'FULFILLED'): ?>
+                    <p class="text-success mt-2"><strong>Shipment has been stored and this PO is fulfilled.</strong></p>
                     <a href="index.php?page=supplier&action=openShipmentUpdate&id=<?= (int)$po['po_id'] ?>"
                        class="btn btn-primary mt-2">Open Shipment Update</a>
                 <?php elseif ($po['status'] === 'MODIFICATION_REQUESTED'): ?>

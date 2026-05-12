@@ -12,6 +12,7 @@
                 <strong>PO ID:</strong> <?= (int)$po['po_id'] ?> | <strong>Supplier:</strong> <?= htmlspecialchars($po['company_name']) ?>
             </div>
             <div class="card-body">
+                <p><strong>Status:</strong> <?= htmlspecialchars($po['status']) ?></p>
                 <p><strong>Generated At:</strong> <?= htmlspecialchars($po['generated_at']) ?></p>
                 <p><strong>Digital Signature:</strong> <span class="font-monospace"><?= htmlspecialchars($po['digital_signature']) ?></span></p>
                 
@@ -45,10 +46,16 @@
                 </table>
 
                 <div class="d-flex gap-2">
-                    <form action="index.php?page=procurement&action=approvePO" method="POST">
-                        <input type="hidden" name="po_id" value="<?= (int)$po['po_id'] ?>">
-                        <button type="submit" class="btn btn-success">Approve PO & Send to Supplier</button>
-                    </form>
+                    <?php if ($po['status'] === 'PENDING'): ?>
+                        <form action="index.php?page=procurement&action=approvePO" method="POST">
+                            <input type="hidden" name="po_id" value="<?= (int)$po['po_id'] ?>">
+                            <button type="submit" class="btn btn-success">Approve PO & Send to Supplier</button>
+                        </form>
+                    <?php elseif ($po['status'] === 'MODIFICATION_REQUESTED'): ?>
+                        <div class="alert alert-warning mb-0 py-2">
+                            Supplier requested modification on this PO.
+                        </div>
+                    <?php endif; ?>
 
                     <a href="index.php?page=procurement&action=downloadPOPdf&id=<?= (int)$po['po_id'] ?>"
                        class="btn btn-outline-primary">Save PO as PDF</a>

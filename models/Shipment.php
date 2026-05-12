@@ -4,6 +4,7 @@ require_once __DIR__ . '/../config/Database.php';
 class Shipment {
     private $conn;
     private $shipmentColumns = null;
+    private const STATE_ORDER = ['EXPECTED', 'AT_DOCK', 'BEING_INSPECTED', 'STORED'];
 
     public function __construct() {
         $this->conn = Database::getInstance()->getConnection();
@@ -27,6 +28,7 @@ class Shipment {
 
     public function persistShipmentDetails($poId, $dispatchDate, $arrivalDate, $items) {
         $trackingNumber = 'TRK-' . $poId . '-' . date('His');
+        $normalizedItems = $this->normalizeShipmentItems($items);
 
         $stmt = $this->conn->prepare(
             "SELECT shipment_id FROM SHIPMENT WHERE po_id = ? ORDER BY shipment_id DESC LIMIT 1"
@@ -76,6 +78,8 @@ class Shipment {
             $stmt->execute($params);
             $shipmentId = (int)$this->conn->lastInsertId();
         }
+
+        $this->storeShipmentLineQuantities($poId, $normalizedItems);
 
         return $shipmentId;
     }
@@ -140,10 +144,49 @@ class Shipment {
     }
 
     public function setShipmentState($shipmentId, $state) {
+        $shipment = $this->getShipmentById($shipmentId);
+        if (empty($shipment)) {
+            return false;
+        }
+
+        $currentState = $shipment['state'] ?? '';
+        if ($currentState !== '' && !$this->isForwardStateTransition($currentState, $state)) {
+            return false;
+        }
+
         $stmt = $this->conn->prepare(
             "UPDATE SHIPMENT SET state = ? WHERE shipment_id = ?"
         );
-        $stmt->execute([$state, $shipmentId]);
+        return $stmt->execute([$state, $shipmentId]);
+    }
+
+    public function advanceShipmentState($shipmentId) {
+        $shipment = $this->getShipmentById($shipmentId);
+        if (empty($shipment)) {
+            return null;
+        }
+
+        $currentState = $shipment['state'] ?? '';
+        $currentIndex = array_search($currentState, self::STATE_ORDER, true);
+        if ($currentIndex === false || $currentIndex >= count(self::STATE_ORDER) - 1) {
+            return null;
+        }
+
+        $nextState = self::STATE_ORDER[$currentIndex + 1];
+        if (!$this->setShipmentState($shipmentId, $nextState)) {
+            return null;
+        }
+
+        if ($nextState === 'AT_DOCK' && $this->hasShipmentColumn('actual_arrival')) {
+            $stmt = $this->conn->prepare(
+                "UPDATE SHIPMENT
+                 SET actual_arrival = COALESCE(actual_arrival, CURDATE())
+                 WHERE shipment_id = ?"
+            );
+            $stmt->execute([$shipmentId]);
+        }
+
+        return $this->getShipmentById($shipmentId);
     }
 
     public function fetchSupplierDeliveryHistory($supplierId) {
@@ -226,6 +269,18 @@ class Shipment {
         return $row ? (int)$row['supplier_id'] : 0;
     }
 
+    public function fetchPoIdForShipment($shipmentId) {
+        $stmt = $this->conn->prepare(
+            "SELECT po_id
+             FROM SHIPMENT
+             WHERE shipment_id = ?
+             LIMIT 1"
+        );
+        $stmt->execute([$shipmentId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ? (int)$row['po_id'] : 0;
+    }
+
     public function detectBackorderedItemsInShipment($shipmentId) {
         $stmt = $this->conn->prepare(
             "SELECT DISTINCT pli.item_id, pli.quantity_received
@@ -306,6 +361,17 @@ class Shipment {
         }
     }
 
+    public function finalizeStoredShipment($shipmentId) {
+        $shipment = $this->getShipmentById($shipmentId);
+        if (empty($shipment) || ($shipment['state'] ?? '') !== 'STORED') {
+            return [];
+        }
+
+        $items = $this->detectBackorderedItemsInShipment($shipmentId);
+        $this->updateInventory($items);
+        return $items;
+    }
+
     private function hasShipmentColumn($column) {
         if ($this->shipmentColumns === null) {
             $stmt = $this->conn->query("SHOW COLUMNS FROM SHIPMENT");
@@ -322,5 +388,48 @@ class Shipment {
         $stmt = $this->conn->prepare("SHOW TABLES LIKE ?");
         $stmt->execute([$table]);
         return $stmt->fetch() !== false;
+    }
+
+    private function normalizeShipmentItems($items) {
+        $normalized = [];
+        foreach ($items as $itemId => $qty) {
+            $itemId = (int)$itemId;
+            $qty = max(0, (int)$qty);
+            if ($itemId > 0) {
+                $normalized[$itemId] = $qty;
+            }
+        }
+        return $normalized;
+    }
+
+    private function storeShipmentLineQuantities($poId, $items) {
+        if (empty($items)) {
+            return;
+        }
+
+        $stmt = $this->conn->prepare(
+            "UPDATE PO_LINE_ITEM
+             SET quantity_received = ?
+             WHERE po_id = ? AND item_id = ?"
+        );
+
+        foreach ($items as $itemId => $qty) {
+            $stmt->execute([$qty, $poId, $itemId]);
+        }
+    }
+
+    private function isForwardStateTransition($currentState, $nextState) {
+        if ($currentState === $nextState) {
+            return true;
+        }
+
+        $currentIndex = array_search($currentState, self::STATE_ORDER, true);
+        $nextIndex = array_search($nextState, self::STATE_ORDER, true);
+
+        if ($currentIndex === false || $nextIndex === false) {
+            return false;
+        }
+
+        return $nextIndex === $currentIndex + 1;
     }
 }

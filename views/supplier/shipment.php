@@ -163,6 +163,8 @@
                 </table>
             </div>
         </div>
+    <?php elseif (!empty($shipment['backorderSummary']) && !empty($shipment['backorderSummary']['deferred'])): ?>
+        <div class="alert alert-info">Backorder processing will run after the shipment reaches STORED.</div>
     <?php elseif (!empty($shipment['backorderSummary']) && empty($shipment['backorderSummary']['hasBackorders'])): ?>
         <div class="alert alert-success">No open backorders were matched to this shipment.</div>
     <?php endif; ?>

@@ -4,13 +4,14 @@ if (!isset($_SESSION['user_id'])) {
     header("Location: index.php?page=auth&action=login");
     exit();
 }
-if ($_SESSION['role'] !== 'supplier') {
+if ($_SESSION['role'] !== 'supplier' && $_SESSION['role'] !== 'manager') {
     http_response_code(403);
     die("Access denied.");
 }
 
 require_once __DIR__ . '/../models/Shipment.php';
 require_once __DIR__ . '/../models/NotificationService.php';
+require_once __DIR__ . '/../services/BackorderService.php';
 
 class BackorderController {
 
@@ -19,7 +20,7 @@ class BackorderController {
         $shipment = $shipmentModel->getShipmentById($shipmentId);
         $state = $shipment['state'] ?? '';
 
-        if ($state !== 'AT_DOCK' && $state !== 'STORED') {
+        if ($state !== 'STORED') {
             return [
                 'hasBackorders' => false,
                 'processed' => 0,
@@ -37,7 +38,8 @@ class BackorderController {
             ];
         }
 
-        $backorders = $shipmentModel->fetchOpenBackorders($backorderedItems);
+        $service = new BackorderService();
+        $backorders = $service->fetchAndMatchBackorders($backorderedItems);
         if (empty($backorders)) {
             return [
                 'hasBackorders' => false,
@@ -48,19 +50,29 @@ class BackorderController {
 
         $prioritizedList = $this->sortByWaitingTime($backorders);
         $processedItems = [];
+        $remainingByItem = [];
+
+        foreach ($backorderedItems as $item) {
+            $remainingByItem[(int)$item['item_id']] = (int)$item['quantity_received'];
+        }
 
         foreach ($prioritizedList as $row) {
+            $itemId = (int)$row['item_id'];
+            $requiredQty = (int)$row['quantity_needed'];
+            if (($remainingByItem[$itemId] ?? 0) < $requiredQty) {
+                continue;
+            }
+
             $this->allocateStockToCustomer($row['customer_id'], $row['item_id'], $row['quantity_needed']);
-            $this->updateBackorderRecord($row['backorder_id'], 'FULFILLED');
+            $service->updateBackorderRecord($row['backorder_id'], 'FULFILLED');
             $this->dispatchCustomerNotification($row['customer_id'], $row['item_id']);
             $this->dispatchFloorStaffNotification($row['item_id'], 'Packing Station A');
+            $remainingByItem[$itemId] -= $requiredQty;
             $processedItems[] = $row;
         }
 
-        $this->updateInventory($backorderedItems);
-
         return $this->backordersProcessed([
-            'hasBackorders' => true,
+            'hasBackorders' => !empty($processedItems),
             'processed' => count($processedItems),
             'items' => $processedItems
         ]);
@@ -84,8 +96,8 @@ class BackorderController {
     }
 
     public function updateBackorderRecord($id, $status) {
-        $shipmentModel = new Shipment();
-        $shipmentModel->updateBackorderRecord($id, $status);
+        $service = new BackorderService();
+        $service->updateBackorderRecord($id, $status);
     }
 
     public function dispatchCustomerNotification($customerId, $itemId) {
@@ -96,11 +108,6 @@ class BackorderController {
     public function dispatchFloorStaffNotification($itemId, $station) {
         $ns = NotificationService::getInstance();
         $ns->dispatchFloorStaffNotification($itemId, $station);
-    }
-
-    public function updateInventory($items) {
-        $shipmentModel = new Shipment();
-        $shipmentModel->updateInventory($items);
     }
 
     public function backordersProcessed($summary) {

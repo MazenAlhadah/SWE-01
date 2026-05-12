@@ -102,6 +102,8 @@ switch ($page) {
             $ctrl->downloadPOPdf();
         } elseif ($action === 'approvePO') {
             $ctrl->approvePO();
+        } elseif ($action === 'advanceShipmentState') {
+            $ctrl->advanceShipmentState();
         } else {
             $ctrl->index();
         }

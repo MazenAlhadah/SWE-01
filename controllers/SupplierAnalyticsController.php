@@ -9,6 +9,7 @@ if ($_SESSION['role'] !== 'manager') {
     die("Access denied.");
 }
 
+require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../models/Supplier.php';
 require_once __DIR__ . '/../services/ContractService.php';
 
@@ -26,15 +27,23 @@ class SupplierAnalyticsController {
         foreach ($suppliers as $supplier) {
             $deliveryHistory = $supplierModel->fetchDeliveryHistory($supplier['supplier_id']);
             $accuracyScore = $this->calculateAccuracyScore($deliveryHistory);
-            
+
             $supplierReport[$supplier['supplier_id']] = [
-                'details' => $supplier,
-                'accuracyScore' => $accuracyScore,
-                'deliveryHistory' => $deliveryHistory
+                'details'         => $supplier,
+                'accuracyScore'   => $accuracyScore,
+                'deliveryHistory' => $deliveryHistory,
+                'contracts'       => []
             ];
         }
 
-        $contracts = $this->fetchSupplierContracts();
+        // Group contracts by supplier_id for per-supplier rendering
+        $allContracts = $this->fetchSupplierContracts();
+        foreach ($allContracts as $c) {
+            $sid = $c['supplier_id'];
+            if (isset($supplierReport[$sid])) {
+                $supplierReport[$sid]['contracts'][] = $c;
+            }
+        }
 
         require_once __DIR__ . '/../views/procurement/analytics.php';
     }
@@ -45,11 +54,11 @@ class SupplierAnalyticsController {
     }
 
     public function calculateAccuracyScore($history) {
-        if (empty($history)) return 1.0; // default perfect score if no history
-        $ordered = 0;
+        if (empty($history)) return 1.0;
+        $ordered  = 0;
         $received = 0;
         foreach ($history as $h) {
-            $ordered += $h['quantity_ordered'];
+            $ordered  += $h['quantity_ordered'];
             $received += $h['quantity_received'];
         }
         if ($ordered == 0) return 1.0;
@@ -63,17 +72,25 @@ class SupplierAnalyticsController {
 
     public function recordManagerDecision() {
         $supplierId = isset($_POST['supplier_id']) ? (int)$_POST['supplier_id'] : 0;
-        $managerId = $_SESSION['user_id'];
-        
+        $managerId  = $_SESSION['user_id'];
+
         if ($supplierId) {
             $conn = Database::getInstance()->getConnection();
+
+            // Resolve company name for a meaningful audit entry
+            $nameStmt = $conn->prepare("SELECT company_name FROM SUPPLIER WHERE supplier_id = ?");
+            $nameStmt->execute([$supplierId]);
+            $row         = $nameStmt->fetch(PDO::FETCH_ASSOC);
+            $companyName = $row ? $row['company_name'] : "Supplier #$supplierId";
+
             $stmt = $conn->prepare(
-                "INSERT INTO AUDIT_LOG (user_id, sensor_id, event_type, event_detail, reason, discrepancy_rate, timestamp)
-                 VALUES (?, NULL, 'SUPPLIER_EVALUATED', ?, 'Manager selected preferred supplier', 0, NOW())"
+                "INSERT INTO AUDIT_LOG
+                    (user_id, sensor_id, event_type, event_detail, reason, discrepancy_rate, timestamp)
+                 VALUES (?, NULL, 'SUPPLIER_PREFERRED', ?, 'Manager set preferred supplier after analytics review', 0, NOW())"
             );
-            $stmt->execute([$managerId, "Manager preferred supplier $supplierId after evaluation"]);
+            $stmt->execute([$managerId, "Manager marked '$companyName' (ID $supplierId) as preferred supplier"]);
         }
-        
+
         header("Location: index.php?page=supplier_analytics&decision_recorded=1");
         exit();
     }

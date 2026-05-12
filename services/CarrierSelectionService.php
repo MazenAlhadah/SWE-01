@@ -13,8 +13,9 @@ class CarrierSelectionService {
 
         $orderDetails = $this->fetchOrderDetails($orderId);
         $carriers = $this->fetchAvailableCarriers();
-        $filteredCarriers = $this->applyCarrierSelectionLogic($carriers, $orderDetails['shipping_address'], $orderDetails['urgency']);
-        $rankedCarriers = $this->rankCarriers($filteredCarriers);
+        $urgency = strtoupper((string)($orderDetails['urgency'] ?? 'NORMAL'));
+        $filteredCarriers = $this->applyCarrierSelectionLogic($carriers, $orderDetails['shipping_address'], $urgency);
+        $rankedCarriers = $this->rankCarriers($filteredCarriers, $urgency);
 
         if (empty($rankedCarriers)) {
             return null;
@@ -57,12 +58,18 @@ class CarrierSelectionService {
             $filtered = $carriers;
         }
 
-        if (strtoupper($urg) === 'HIGH') {
+        if ($urg === 'HIGH') {
             usort($filtered, function($a, $b) {
+                if ($a['delivery_speed_days'] === $b['delivery_speed_days']) {
+                    return $a['base_cost'] <=> $b['base_cost'];
+                }
                 return $a['delivery_speed_days'] <=> $b['delivery_speed_days'];
             });
         } else {
             usort($filtered, function($a, $b) {
+                if ($a['base_cost'] === $b['base_cost']) {
+                    return $a['delivery_speed_days'] <=> $b['delivery_speed_days'];
+                }
                 return $a['base_cost'] <=> $b['base_cost'];
             });
         }
@@ -70,12 +77,22 @@ class CarrierSelectionService {
         return $filtered;
     }
 
-    public function rankCarriers($carriers) {
+    public function rankCarriers($carriers, $urgency = 'NORMAL') {
+        if (strtoupper($urgency) === 'HIGH') {
+            usort($carriers, function($a, $b) {
+                if ($a['delivery_speed_days'] === $b['delivery_speed_days']) {
+                    return $a['base_cost'] <=> $b['base_cost'];
+                }
+                return $a['delivery_speed_days'] <=> $b['delivery_speed_days'];
+            });
+            return $carriers;
+        }
+
         usort($carriers, function($a, $b) {
-            if ($a['delivery_speed_days'] == $b['delivery_speed_days']) {
-                return $a['base_cost'] <=> $b['base_cost'];
+            if ($a['base_cost'] === $b['base_cost']) {
+                return $a['delivery_speed_days'] <=> $b['delivery_speed_days'];
             }
-            return $a['delivery_speed_days'] <=> $b['delivery_speed_days'];
+            return $a['base_cost'] <=> $b['base_cost'];
         });
         return $carriers;
     }

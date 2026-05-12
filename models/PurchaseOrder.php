@@ -3,6 +3,7 @@ require_once __DIR__ . '/../config/Database.php';
 
 class PurchaseOrder {
     private $conn;
+    private const VALID_STATUSES = ['PENDING', 'CONFIRMED', 'MODIFICATION_REQUESTED', 'FULFILLED'];
 
     public function __construct() {
         $this->conn = Database::getInstance()->getConnection();
@@ -39,8 +40,7 @@ class PurchaseOrder {
     }
 
     public function approvePO($poId) {
-        $stmt = $this->conn->prepare("UPDATE PURCHASE_ORDER SET status = 'APPROVED' WHERE po_id = ?");
-        return $stmt->execute([$poId]);
+        return $this->updatePOStatus($poId, 'CONFIRMED');
     }
 
     public function receivePO() {
@@ -68,7 +68,8 @@ class PurchaseOrder {
 
     public function getPO($poId) {
         $stmt = $this->conn->prepare(
-            "SELECT po.po_id, po.supplier_id, po.status, po.total_cost, po.digital_signature, po.generated_at, s.company_name
+            "SELECT po.po_id, po.supplier_id, po.status, po.total_cost, po.digital_signature,
+                    po.generated_at, po.confirmed_at, s.company_name
              FROM PURCHASE_ORDER po
              JOIN SUPPLIER s ON s.supplier_id = po.supplier_id
              WHERE po.po_id = ?"
@@ -90,8 +91,31 @@ class PurchaseOrder {
     }
 
     public function updatePOStatus($poId, $status) {
-        $stmt = $this->conn->prepare("UPDATE PURCHASE_ORDER SET status = ?, confirmed_at = NOW() WHERE po_id = ?");
-        $stmt->execute([$status, $poId]);
+        if (!in_array($status, self::VALID_STATUSES, true)) {
+            return false;
+        }
+
+        $stmt = $this->conn->prepare("SELECT status FROM PURCHASE_ORDER WHERE po_id = ?");
+        $stmt->execute([$poId]);
+        $currentStatus = $stmt->fetchColumn();
+
+        if ($currentStatus === false || !$this->isAllowedStatusTransition($currentStatus, $status)) {
+            return false;
+        }
+
+        if ($status === 'CONFIRMED') {
+            $stmt = $this->conn->prepare(
+                "UPDATE PURCHASE_ORDER
+                 SET status = ?, confirmed_at = COALESCE(confirmed_at, NOW())
+                 WHERE po_id = ?"
+            );
+            return $stmt->execute([$status, $poId]);
+        }
+
+        $stmt = $this->conn->prepare(
+            "UPDATE PURCHASE_ORDER SET status = ? WHERE po_id = ?"
+        );
+        return $stmt->execute([$status, $poId]);
     }
 
     public function logConfirmation($poId) {
@@ -122,5 +146,55 @@ class PurchaseOrder {
         );
         $stmt->execute([$supplierId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getPOsForDashboard() {
+        $stmt = $this->conn->prepare(
+            "SELECT po.po_id,
+                    po.status,
+                    po.total_cost,
+                    po.generated_at,
+                    s.company_name,
+                    sh.shipment_id,
+                    sh.state AS shipment_state,
+                    sh.estimated_arrival,
+                    sh.carrier_id
+             FROM PURCHASE_ORDER po
+             JOIN SUPPLIER s ON s.supplier_id = po.supplier_id
+             LEFT JOIN SHIPMENT sh
+               ON sh.shipment_id = (
+                    SELECT sh2.shipment_id
+                    FROM SHIPMENT sh2
+                    WHERE sh2.po_id = po.po_id
+                    ORDER BY sh2.shipment_id DESC
+                    LIMIT 1
+               )
+             ORDER BY
+                 CASE
+                     WHEN po.status = 'FULFILLED' THEN 0
+                     WHEN po.status = 'MODIFICATION_REQUESTED' THEN 0
+                     WHEN po.status = 'PENDING' THEN 1
+                     WHEN po.status = 'CONFIRMED' THEN 2
+                     ELSE 3
+                 END,
+                 po.generated_at DESC"
+        );
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    private function isAllowedStatusTransition($currentStatus, $nextStatus) {
+        if ($currentStatus === $nextStatus) {
+            return true;
+        }
+
+        $allowedTransitions = [
+            'PENDING' => ['CONFIRMED'],
+            'CONFIRMED' => ['MODIFICATION_REQUESTED', 'FULFILLED'],
+            'MODIFICATION_REQUESTED' => [],
+            'FULFILLED' => [],
+        ];
+
+        return in_array($nextStatus, $allowedTransitions[$currentStatus] ?? [], true);
     }
 }

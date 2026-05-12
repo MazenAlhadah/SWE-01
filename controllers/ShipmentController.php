@@ -39,8 +39,17 @@ class ShipmentController {
         $supplierModel = new Supplier();
         $supplier = $supplierModel->findByUserId($_SESSION['user_id']);
         $shipmentModel = new Shipment();
+        $shipment = $shipmentModel->getShipmentByPoId($poId);
 
-        if (!$po || !$supplier || $po['supplier_id'] != $supplier['supplier_id'] || $po['status'] !== 'CONFIRMED') {
+        $canView = $po
+            && $supplier
+            && $po['supplier_id'] == $supplier['supplier_id']
+            && (
+                $po['status'] === 'CONFIRMED'
+                || ($po['status'] === 'FULFILLED' && !empty($shipment))
+            );
+
+        if (!$canView) {
             $error = 'Only confirmed purchase orders can be dispatched.';
             $shipment = null;
             $recommendedCarrier = null;
@@ -49,7 +58,6 @@ class ShipmentController {
             return;
         }
 
-        $shipment = $shipmentModel->getShipmentByPoId($poId);
         $recommendedCarrier = null;
         $availableCarriers = [];
 
@@ -80,6 +88,18 @@ class ShipmentController {
             exit();
         }
 
+        $hasDispatchQty = false;
+        foreach ((array)$items as $qty) {
+            if ((int)$qty > 0) {
+                $hasDispatchQty = true;
+                break;
+            }
+        }
+        if (!$hasDispatchQty) {
+            header("Location: index.php?page=supplier&shipment_error=1");
+            exit();
+        }
+
         if ($shipmentModel->hasShipmentForPo($poId)) {
             header("Location: index.php?page=supplier&action=openShipmentUpdate&id={$poId}&shipment_exists=1");
             exit();
@@ -97,9 +117,13 @@ class ShipmentController {
 
         list($recommendedCarrier, $availableCarriers) = $this->buildCarrierSelectionData($shipmentId);
 
-        $backorderSummary = $this->triggerBackorderCheck($shipmentId);
         $shipment = $shipmentModel->getShipmentById($shipmentId);
-        $shipment['backorderSummary'] = $backorderSummary;
+        $shipment['backorderSummary'] = [
+            'hasBackorders' => false,
+            'processed' => 0,
+            'items' => [],
+            'deferred' => true
+        ];
         $po = $poModel->getPO($poId);
         $success = 'Shipment dispatch details saved successfully.';
 

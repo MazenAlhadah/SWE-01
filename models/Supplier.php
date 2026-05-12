@@ -41,7 +41,8 @@ class Supplier {
         if (empty($skuList)) return [];
         $placeholders = str_repeat('?,', count($skuList) - 1) . '?';
         $stmt = $this->conn->prepare(
-            "SELECT DISTINCT s.supplier_id, s.company_name, sc.contract_id, sc.unit_price, sc.discount_threshold 
+            "SELECT DISTINCT s.supplier_id, s.company_name, s.accuracy_score, s.tier_rank,
+                    sc.contract_id, sc.unit_price, sc.discount_threshold 
              FROM SUPPLIER s
              JOIN SUPPLIER_CONTRACT sc ON sc.supplier_id = s.supplier_id
              JOIN ITEM i ON i.item_id = sc.item_id
@@ -75,12 +76,14 @@ class Supplier {
     }
 
     public function fetchDeliveryHistory($supplierId) {
-        // Trivial simulation of delivery history using PO and PO_LINE_ITEM
         $stmt = $this->conn->prepare(
-            "SELECT pli.quantity_ordered, pli.quantity_received 
+            "SELECT po.po_id, i.name AS item_name,
+                    pli.quantity_ordered, pli.quantity_received
              FROM PO_LINE_ITEM pli
              JOIN PURCHASE_ORDER po ON po.po_id = pli.po_id
-             WHERE po.supplier_id = ? AND po.status = 'FULFILLED'"
+             JOIN ITEM i ON i.item_id = pli.item_id
+             WHERE po.supplier_id = ? AND po.status = 'FULFILLED'
+             ORDER BY po.po_id"
         );
         $stmt->execute([$supplierId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);

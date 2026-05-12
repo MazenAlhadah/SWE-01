@@ -21,7 +21,7 @@ class NotificationService {
 
     /* Notify manager about a shipment asynchronously (simulated) */
     public function notifyManagerAsync($date, $shipment_id) {
-        $_SESSION['notifications'][] = "Shipment {$shipment_id} dispatched on {$date}";
+        $_SESSION['notifications'][] = "Shipment {$shipment_id} expected on {$date}";
     }
 
     /* Notify customer that a backordered item has been fulfilled */
