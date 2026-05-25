@@ -17,26 +17,36 @@ Modern warehouses face major challenges: stock expiration, slow picking routes, 
 
 ---
 
-## ✨ Key Features & Implemented Use Cases
-We built this project step-by-step, implementing 20 core use cases (UCs) across the backend:
+## 🔍 In-Depth Subsystem Explanation
 
-1. **Inventory Telemetry & Health Dashboard (UC-01 & UC-06):** Real-time monitoring of shelf weight/capacity with dynamic alert triggers.
-2. **Zonal Storage & Expiry Watchdog (UC-02, UC-03 & UC-15):** Expiry date tracking using FEFO guidelines, custom manager override capabilities, and automated Cross-Docking to skip storage for urgent orders.
-3. **Automated Procurement & PO Flow (UC-05 & UC-16):** Triggering Purchase Orders (POs) automatically when stock drops, complete with PDF generation and Supplier dispatch updates.
-4. **Supplier Portal & Analytics (UC-04 & UC-20):** Dedicated portal for suppliers to manage dispatches, choose carriers, and view their Performance Audits.
-5. **Smart Batch Picking (UC-10):** Route-optimized picking list for Pickers, grouping items by warehouse zones to minimize footsteps.
-6. **Double-Scan Packing Station (UC-11, UC-12 & UC-13):** Dynamic item packing with weight verification, physical box size selection, and barcode label printing/scanning to eliminate shipping errors.
-7. **Order State Machine (UC-14):** A robust transaction-locked state machine tracking orders from *Pending* -> *Picking* -> *Packed* -> *Shipped*.
-8. **Emergency System Override (UC-07):** A manager-only panic button to freeze operations during emergencies.
-9. **Archiving & Retaining Data (UC-09):** Job scheduler simulation to compress and move old orders to history tables to keep the database fast.
-10. **Role-Based Access Control (RBAC):** Strict security filters on every page to prevent unauthorized access.
+To help you understand how this system works, we divided it into four main logical subsystems:
+
+### 1. 🌡️ IoT Telemetry & Zonal Storage
+* **IoT Sensor Simulation:** The warehouse is divided into specific physical zones (e.g., Cold Storage, Hazmat, General). We simulate weight and volume sensors on the shelves. If a shelf is overloaded or runs out of volume capacity, the system triggers real-time visual warnings on the dashboard and blocks any new incoming storage allocations to prevent safety hazards.
+* **FEFO Expiry Watchdog:** When storing perishable or time-sensitive goods, the system automatically tags them with batch IDs and expiry dates. When an order is placed, the system dynamically locks and assigns the oldest items that are closest to expiration (First-Expired, First-Out) so nothing goes to waste on the shelves.
+* **Emergency Override:** If a physical hazard occurs (e.g., simulated temperature spike in cold zone), a Manager can hit the "Emergency Override" button. This dynamically freezes all active picking and packing tasks in that zone, locking transactions in the database until safety is restored.
+
+### 2. 🚛 Automated Procurement & Supplier Portal
+* **Low-Stock Triggers:** When inventory of any product drops below a predefined safety threshold, the system flags it as "Low Stock" and queues an automated procurement request.
+* **Purchase Order (PO) State Machine:** Managers can review the queued request, select from verified suppliers based on historical performance ratings, and click to auto-generate a professional PDF Purchase Order.
+* **Supplier Collaboration:** Once generated, the PO instantly appears in the custom **Supplier Portal**. The supplier logs in, confirms the order, assigns a carrier, and updates the dispatch status. 
+* **Supplier Audit:** The system logs exact dispatch times and compares them to agreed delivery windows. This calculates a dynamic "On-Time Delivery Rate" and "Quality Rating" for each supplier, displayed to the Manager during future order placements.
+
+### 3. 🏃‍♂️ Route-Optimized Batch Picking
+* **Batching Orders:** Instead of pickers walking back and forth across the warehouse for single orders, the system automatically groups multiple pending orders into a single "Picking Batch".
+* **Routing Algorithm:** The system organizes the picking list by warehouse physical coordinates (Zone -> Aisle -> Shelf -> Bin). It generates an optimized step-by-step path for the Picker. The picker follows a single logical loop through the warehouse, scanning/confirming items on their screen at each stop until the batch is complete.
+
+### 4. 📦 The Double-Check Packing Station
+* **Packing Verification:** Once the Picker delivers the items to the packing station, the Packer takes over. The Packer must verify that the items match the order exactly.
+* **Physical Box Selector:** The system calculates the total cubic volume of the items and recommends the absolute best-fit box size (Small, Medium, or Large) to reduce shipping costs and waste.
+* **Double-Scan Security:** The packer scans the physical barcode printed on the box, prints the shipping label, and does a final scan verification. The system updates the order state to `Shipped` and locks the transaction so it cannot be double-processed.
 
 ---
 
 ## 🛠️ The Tech Stack We Used
 We intentionally avoided heavy frameworks to master the core fundamentals of web architecture:
 * **Backend:** Pure PHP (MVC Architecture) with OOP and strict session management.
-* **Database:** MySQL/MariaDB with transactional integrity (InnoDB locks) for concurrent picking/packing.
+* **Database:** MySQL/MariaDB with transactional integrity (InnoDB locks) to handle concurrent picking and packing requests safely.
 * **Frontend:** Clean CSS grids, responsive layouts, and Javascript for dynamic fetch calls (like alerts and real-time scanning simulation).
 
 ---
